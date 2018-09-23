@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Expenses</string>
+    <string name="add_window_button_description">Add New Window</string>
+    <string name="add_item_button_description">Add New Item</string>
+    <string name="planned_sum">(optional) total money limit</string>
+    <string name="window_name">Provide name for this window</string>
+    <string name="cancel_adding_window">Cancel</string>
+    <string name="confirm_adding_window">Submit</string>
+    <string name="item_sum">Money amount</string>
+    <string name="item_description">Provide an item description</string>
+    <string name="item_sign">Check if it was a gain?</string>
+</resources>
