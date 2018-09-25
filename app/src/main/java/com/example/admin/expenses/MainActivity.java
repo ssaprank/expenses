@@ -1,13 +1,16 @@
 package com.example.admin.expenses;
 
 import android.content.Intent;
+import android.graphics.drawable.ColorDrawable;
 import android.support.v4.app.FragmentTransaction;
 import android.database.Cursor;
 import android.support.constraint.ConstraintLayout;
 import android.support.constraint.ConstraintSet;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
@@ -23,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         final ExpensesDatabase db = ExpensesDatabase.getInstance(this);
-
+        setActionBar("Manage your expenses");
         Cursor windowsCursor = db.window().selectAll();
 
         boolean firstElement = true;
@@ -86,12 +89,12 @@ public class MainActivity extends AppCompatActivity {
             set.applyTo(layoutMain);
 
             // Now connect the deletion button to the text view
-            set.connect(deleteWindowButton.getId(), ConstraintSet.LEFT, windowTextView.getId(), ConstraintSet.RIGHT, 40);
+            set.connect(deleteWindowButton.getId(), ConstraintSet.RIGHT, ConstraintSet.PARENT_ID, ConstraintSet.RIGHT, 40);
             if (firstElement) {
                 set.connect(deleteWindowButton.getId(), ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP, 40);
                 firstElement = false;
             } else {
-                set.connect(deleteWindowButton.getId(), ConstraintSet.TOP, previousElementId, ConstraintSet.BOTTOM, 10);
+                set.connect(deleteWindowButton.getId(), ConstraintSet.TOP, previousElementId, ConstraintSet.BOTTOM, 40);
             }
             set.applyTo(layoutMain);
 
@@ -122,6 +125,18 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(this, ItemsActivity.class);
         intent.putExtra("window_id", windowId);
         startActivity(intent);
+    }
+
+    public void setActionBar(String heading) {
+        // TODO Auto-generated method stub
+
+        ActionBar actionBar = getSupportActionBar();
+        actionBar.setHomeButtonEnabled(true);
+        actionBar.setDisplayHomeAsUpEnabled(false);
+        actionBar.setDisplayShowHomeEnabled(false);
+        actionBar.setTitle(heading);
+        actionBar.show();
+
     }
 
 }

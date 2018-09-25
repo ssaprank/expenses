@@ -14,16 +14,14 @@ import android.widget.TextView;
 
 import com.example.admin.expenses.data.ExpensesDatabase;
 import com.example.admin.expenses.fragments.AddItemDialogFragment;
-import com.example.admin.expenses.fragments.AddWindowDialogFragment;
 
-import org.w3c.dom.Text;
+import java.util.Locale;
 
 public class ItemsActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         Intent intent = getIntent();
         final long windowId = intent.getLongExtra("window_id", 0);
 
@@ -34,10 +32,10 @@ public class ItemsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_items);
         final ExpensesDatabase db = ExpensesDatabase.getInstance(this);
         Cursor itemCursor = db.item().selectByWindowId(windowId);
-        //Cursor itemCursor = db.item().selectAll();
 
         boolean firstElement = true;
         int previousElementId = 0;
+        double totalSpent = 0;
 
         ConstraintSet set = new ConstraintSet();
         ConstraintLayout layoutItems = findViewById(R.id.layout_item_list);
@@ -52,8 +50,10 @@ public class ItemsActivity extends AppCompatActivity {
             String sumString = "";
 
             if (gained) {
+                totalSpent -= sum;
                 sumString = "+ " + Double.toString(sum);
             } else {
+                totalSpent += sum;
                 sumString = "- " + Double.toString(sum);
             }
 
@@ -62,8 +62,8 @@ public class ItemsActivity extends AppCompatActivity {
             TextView itemTextView = new TextView(this);
 
             itemTextView.setText(itemText);
-            itemTextView.setId(View.generateViewId());
             layoutItems.addView(itemTextView);
+            itemTextView.setId(View.generateViewId());
 
             // button view for item deletion
             ImageButton deleteItemButton = new ImageButton(this);
@@ -72,7 +72,7 @@ public class ItemsActivity extends AppCompatActivity {
                 public void onClick(View v) {
                     try {
                         db.beginTransaction();
-                        db.window().deleteById(itemId);
+                        db.item().deleteById(itemId);
                         db.setTransactionSuccessful();
                     } catch (Exception e) {} finally {
                         db.endTransaction();
@@ -84,6 +84,8 @@ public class ItemsActivity extends AppCompatActivity {
 
             layoutItems.addView(deleteItemButton);
             deleteItemButton.setId(View.generateViewId());
+
+            set.clone(layoutItems);
 
             // if it's the first window - let it match constraint layout
             // otherwise - let it be constrained relative to the previous window
@@ -110,6 +112,31 @@ public class ItemsActivity extends AppCompatActivity {
         }
 
         itemCursor.close();
+
+        String totalSumString = String.format(Locale.getDefault(), "Total sum: %.2f", totalSpent);
+
+        Cursor windowPlannedSumCursor = db.window().selectById(windowId);
+
+        if (windowPlannedSumCursor.moveToFirst() && windowPlannedSumCursor.getCount() >= 1) {
+            int index = windowPlannedSumCursor.getColumnIndex("planned_sum");
+
+            if (index > 0) {
+                Log.d("DEBUG", "INDEX: " + index);
+                Log.d("DEBUG", "CURSOR COUNT: " + windowPlannedSumCursor.getCount());
+                double windowPlannedSum = windowPlannedSumCursor.getDouble(index);
+
+                if (windowPlannedSum > 0) {
+                    totalSumString += String.format(Locale.getDefault(), "\nPlanned sum: %.2f", windowPlannedSum);
+                    totalSumString += String.format(Locale.getDefault(), "\nRemaining money to spend: %.2f", (windowPlannedSum - totalSpent));
+                }
+            }
+            windowPlannedSumCursor.close();
+        }
+
+
+        // Text view showing the total amount of money spent
+        TextView totalSumTextView =  findViewById(R.id.totals_item_text_view);
+        totalSumTextView.setText(totalSumString);
 
         ImageButton addItemButton = findViewById(R.id.addItemButton);
 
