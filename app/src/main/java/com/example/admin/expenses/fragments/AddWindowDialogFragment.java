@@ -40,7 +40,12 @@ public class AddWindowDialogFragment extends DialogFragment {
                 EditText nameView = myFragmentView.findViewById(R.id.windowName);
                 EditText plannedSumView = myFragmentView.findViewById(R.id.plannedSum);
                 window.name = nameView.getText().toString();
-                window.planned = Double.parseDouble(plannedSumView.getText().toString());
+
+                try {
+                    window.planned = Double.parseDouble(plannedSumView.getText().toString());
+                } catch (Exception e) {
+                    window.planned = 0;
+                }
 
                 db.beginTransaction();
                 try {
