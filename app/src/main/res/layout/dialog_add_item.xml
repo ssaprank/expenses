@@ -35,16 +35,11 @@
         app:layout_constraintTop_toBottomOf="@+id/item_description"
         app:layout_constraintVertical_bias="0.01" />
 
-    <CheckBox
-        android:id="@+id/item_sign"
-        android:layout_width="wrap_content"
+    <Spinner
+        android:id="@+id/spinner"
+        android:layout_width="344dp"
         android:layout_height="wrap_content"
-        android:text="@string/item_sign"
         tools:layout_editor_absoluteX="8dp"
-        tools:layout_editor_absoluteY="132dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/item_sum"
-        app:layout_constraintBottom_toBottomOf="parent" />
+        tools:layout_editor_absoluteY="108dp" />
 
 </android.support.constraint.ConstraintLayout>

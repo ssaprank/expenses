@@ -20,4 +20,9 @@ public class Window {
     /** Spending limit for this window. */
     @ColumnInfo(name = "planned_sum")
     public double planned;
+
+    /** People participating in spendings of this window. */
+    /** Comma separated string */
+    @ColumnInfo(name = "participants")
+    public double participants;
 }

@@ -29,10 +29,6 @@ public class Item {
     @ColumnInfo(name = "sum")
     public double sum;
 
-    /** Positive or Negative value to show whether it's a spend or a gain */
-    @ColumnInfo(name = "sign")
-    public boolean sign;
-
     /** Timestamp of item creation. */
     @ColumnInfo(name = "timestamp")
     public long created_timestamp;

@@ -45,17 +45,9 @@ public class ItemsActivity extends AppCompatActivity {
             String description = itemCursor.getString(itemCursor.getColumnIndex("description"));
             double sum = itemCursor.getDouble(itemCursor.getColumnIndex("sum"));
             final long itemId = itemCursor.getLong(itemCursor.getColumnIndex("id"));
-            boolean gained = itemCursor.getInt(itemCursor.getColumnIndex("sign")) > 0;
 
-            String sumString = "";
-
-            if (gained) {
-                totalSpent -= sum;
-                sumString = "+ " + Double.toString(sum);
-            } else {
-                totalSpent += sum;
-                sumString = "- " + Double.toString(sum);
-            }
+            totalSpent += sum;
+            String sumString = Double.toString(sum);
 
             String itemText = String.format("%s\nSum:%s\n", description, sumString);
 
@@ -121,8 +113,6 @@ public class ItemsActivity extends AppCompatActivity {
             int index = windowPlannedSumCursor.getColumnIndex("planned_sum");
 
             if (index > 0) {
-                Log.d("DEBUG", "INDEX: " + index);
-                Log.d("DEBUG", "CURSOR COUNT: " + windowPlannedSumCursor.getCount());
                 double windowPlannedSum = windowPlannedSumCursor.getDouble(index);
 
                 if (windowPlannedSum > 0) {

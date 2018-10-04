@@ -2,6 +2,7 @@
     <string name="app_name">Expenses</string>
     <string name="add_window_button_description">Add New Window</string>
     <string name="add_item_button_description">Add New Item</string>
+    <string name="person_button_description">Manage persons</string>
     <string name="planned_sum">(optional) total money limit</string>
     <string name="window_name">Provide name for this window</string>
     <string name="cancel_adding_window">Cancel</string>

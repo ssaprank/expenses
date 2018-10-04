@@ -50,11 +50,9 @@ public class AddItemDialogFragment extends DialogFragment {
 
                 EditText descriptionView = myFragmentView.findViewById(R.id.item_description);
                 EditText sumView = myFragmentView.findViewById(R.id.item_sum);
-                CheckBox signCheckBox = myFragmentView.findViewById(R.id.item_sign);
                 item.windowID = getArguments().getLong("window_id");
                 item.description = descriptionView.getText().toString();
                 item.sum = Double.parseDouble(sumView.getText().toString());
-                item.sign = signCheckBox.isChecked();
                 item.created_timestamp = System.currentTimeMillis() / 1000;
 
                 db.beginTransaction();
