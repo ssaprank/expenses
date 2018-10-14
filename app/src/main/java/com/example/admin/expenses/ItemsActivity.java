@@ -9,12 +9,17 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.TabHost;
 import android.widget.TextView;
 
 import com.example.admin.expenses.data.ExpensesDatabase;
+import com.example.admin.expenses.data.Window;
 import com.example.admin.expenses.fragments.AddItemDialogFragment;
+import com.example.admin.expenses.fragments.AddParticipantDialogFragment;
 
+import java.util.ArrayList;
 import java.util.Locale;
 
 public class ItemsActivity extends AppCompatActivity {
@@ -30,7 +35,33 @@ public class ItemsActivity extends AppCompatActivity {
         }
 
         setContentView(R.layout.activity_items);
+
+        TabHost tabHost = findViewById(R.id.tabHost);
+        tabHost.setup();
+
+        // First tab
+        TabHost.TabSpec specs = tabHost.newTabSpec("first");
+        specs.setContent(R.id.tab_layout_items);
+        specs.setIndicator("First Tab");
+
+        tabHost.addTab(specs);
+
         final ExpensesDatabase db = ExpensesDatabase.getInstance(this);
+
+        // load window participants from DB
+        Cursor windowCursor = db.window().selectById(windowId);
+        windowCursor.moveToFirst();
+        final String participantsString = windowCursor.getString(windowCursor.getColumnIndex("participants"));
+        final String[] participants = participantsString.split(",");
+        windowCursor.close();
+
+        // Second tab - for managing participants
+        specs = tabHost.newTabSpec("second");
+        specs.setContent(R.id.tab_layout_participants);
+        specs.setIndicator("Second Tab");
+
+        tabHost.addTab(specs);
+
         Cursor itemCursor = db.item().selectByWindowId(windowId);
 
         boolean firstElement = true;
@@ -123,7 +154,6 @@ public class ItemsActivity extends AppCompatActivity {
             windowPlannedSumCursor.close();
         }
 
-
         // Text view showing the total amount of money spent
         TextView totalSumTextView =  findViewById(R.id.totals_item_text_view);
         totalSumTextView.setText(totalSumString);
@@ -148,5 +178,79 @@ public class ItemsActivity extends AppCompatActivity {
             }
         });
 
+        // Create participants list
+        if (participants.length > 0) {
+            ConstraintSet participantsSet = new ConstraintSet();
+            ConstraintLayout layoutParticipants = findViewById(R.id.layout_participants_list);
+
+            boolean firstParticipant = true;
+            int previousParticipantViewId = 0;
+
+            for (int i = 0; i < participants.length; i++) {
+                String participantName = participants[i];
+                Cursor debtCursor = db.debt().selectByWindowIdAndDebtor(windowId, participantName);
+
+                TextView participantView = new TextView(this);
+
+                String participantText = participantName;
+
+                if (debtCursor.getCount() > 0) {
+                    participantText += "\nOwns:\n";
+                }
+
+                while (debtCursor.moveToNext()) {
+                    double ownedAmount = debtCursor.getDouble(debtCursor.getColumnIndex("amount"));
+                    String owner = debtCursor.getString(debtCursor.getColumnIndex("owner"));
+
+                    participantText += "\n" + ownedAmount + " to " + owner;
+                }
+
+                participantView.setText(participantText);
+                layoutParticipants.addView(participantView);
+                participantView.setId(View.generateViewId());
+                participantsSet.clone(layoutParticipants);
+
+                if (firstParticipant) {
+                    participantsSet.connect(participantView.getId(), ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP, 40);
+
+                    firstParticipant = false;
+                } else {
+                    participantsSet.connect(participantView.getId(), ConstraintSet.TOP, previousParticipantViewId, ConstraintSet.BOTTOM, 40);
+                }
+                participantsSet.connect(participantView.getId(), ConstraintSet.LEFT, ConstraintSet.PARENT_ID, ConstraintSet.LEFT, 40);
+                participantsSet.applyTo(layoutParticipants);
+
+                previousParticipantViewId = participantView.getId();
+            }
+        }
+
+        ImageButton addParticipantButton = findViewById(R.id.addParticipantButton);
+
+        addParticipantButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+                android.support.v4.app.Fragment prev = getSupportFragmentManager().findFragmentByTag("dialog");
+
+                if (prev != null) {
+                    ft.remove(prev);
+                }
+
+                ft.addToBackStack(null);
+
+                AddParticipantDialogFragment addParticipantsDialog = new AddParticipantDialogFragment();
+                Bundle args = new Bundle();
+                args.putLong("window_id", windowId);
+                args.putString("window_participants", participantsString);
+                addParticipantsDialog.setArguments(args);
+                addParticipantsDialog.show(ft, "dialog");
+            }
+        });
     }
+
+    //protected void updateAddItemDialogLayout(ArrayList<String> participants)
+    //{
+      //  View myFragmentView = getLayoutInflater().inflate(R.layout.dialog_add_item, null);
+        //ViewGroup insertionPoint = findViewById(R.id.participant_checkbox_layout);
+        //insertionPoint.addView(myFragmentView, 0, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    //}
 }

@@ -9,7 +9,7 @@ import android.support.annotation.VisibleForTesting;
 /**
  * The Room database.
  */
-@Database(entities = {Window.class, Item.class}, version = 2, exportSchema = false)
+@Database(entities = {Window.class, Item.class, Debt.class}, version = 3, exportSchema = false)
 public abstract class ExpensesDatabase extends RoomDatabase {
 
     /**
@@ -23,6 +23,12 @@ public abstract class ExpensesDatabase extends RoomDatabase {
      */
     @SuppressWarnings("WeakerAccess")
     public abstract ItemDao item();
+
+    /**
+     * @return The DAO for the Debt table.
+     */
+    @SuppressWarnings("WeakerAccess")
+    public abstract DebtDao debt();
 
     /** The only instance */
     private static ExpensesDatabase sInstance;

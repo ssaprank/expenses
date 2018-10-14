@@ -36,6 +36,15 @@ public interface WindowDao {
     Cursor selectById(long id);
 
     /**
+     * Select window participants by ID.
+     *
+     * @param id The row ID.
+     * @return A {@link Cursor} of the selected window.
+     */
+    @Query("SELECT participants FROM " + Window.TABLE_NAME + " WHERE id = :id")
+    Cursor selectParticipantsById(long id);
+
+    /**
      * Delete a window by ID.
      *
      * @param id The row ID.
@@ -52,4 +61,10 @@ public interface WindowDao {
      */
     @Update
     int update(Window window);
+
+    /**
+     * Update participants by window id
+     */
+    @Query("UPDATE " + Window.TABLE_NAME + " SET participants = :participants WHERE id = :id")
+    int updateParticipantsById(String participants, long id);
 }
