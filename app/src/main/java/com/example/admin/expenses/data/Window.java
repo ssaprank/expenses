@@ -24,5 +24,5 @@ public class Window {
     /** People participating in spendings of this window. */
     /** Comma separated string */
     @ColumnInfo(name = "participants")
-    public double participants;
+    public String participants;
 }

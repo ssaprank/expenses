@@ -26,14 +26,6 @@ public interface DebtDao {
     Cursor selectByWindowId(long windowId);
 
     /**
-     * Select all debts that belong to a window.
-     *
-     * @return A {@link Cursor} of all the debts in the table that belong to a specific window.
-     */
-    @Query("SELECT * FROM " + Debt.TABLE_NAME + " WHERE window_id = :windowId AND debtor = :debtor")
-    Cursor selectByWindowIdAndDebtor(long windowId, String debtor);
-
-    /**
      * Select a debt.
      *
      * @param owner The debt owner.
@@ -41,8 +33,8 @@ public interface DebtDao {
      * @param windowId Id of the debt's window.
      * @return A {@link Cursor} of the selected debt.
      */
-    @Query("SELECT * FROM " + Debt.TABLE_NAME + " WHERE owner = :owner AND debtor = :debtor AND window_id = :windowId")
-    Cursor select(String owner, String debtor, long windowId);
+    @Query("SELECT SUM(amount) FROM " + Debt.TABLE_NAME + " WHERE owner = :owner AND debtor = :debtor AND window_id = :windowId")
+    Cursor selectPersonalDebt(String owner, String debtor, long windowId);
 
     /**
      * Delete a debt.
@@ -54,13 +46,4 @@ public interface DebtDao {
      */
     @Query("DELETE FROM " + Debt.TABLE_NAME + " WHERE owner = :owner AND debtor = :debtor AND window_id = :windowId")
     int deleteById(String owner, String debtor, long windowId);
-
-    /**
-     * Update the window (identified by id).
-     *
-     * @param debt The debt to update.
-     * @return A number of debts updated. This should always be {@code 1}.
-     */
-    @Update
-    int update(Debt debt);
 }

@@ -9,7 +9,7 @@ import android.support.annotation.VisibleForTesting;
 /**
  * The Room database.
  */
-@Database(entities = {Window.class, Item.class, Debt.class}, version = 3, exportSchema = false)
+@Database(entities = {Window.class, Item.class, Debt.class}, version = 5, exportSchema = false)
 public abstract class ExpensesDatabase extends RoomDatabase {
 
     /**

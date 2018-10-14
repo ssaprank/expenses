@@ -52,7 +52,6 @@ public class ItemsActivity extends AppCompatActivity {
         Cursor windowCursor = db.window().selectById(windowId);
         windowCursor.moveToFirst();
         final String participantsString = windowCursor.getString(windowCursor.getColumnIndex("participants"));
-        final String[] participants = participantsString.split(",");
         windowCursor.close();
 
         // Second tab - for managing participants
@@ -149,13 +148,14 @@ public class ItemsActivity extends AppCompatActivity {
                 if (windowPlannedSum > 0) {
                     totalSumString += String.format(Locale.getDefault(), "\nPlanned sum: %.2f", windowPlannedSum);
                     totalSumString += String.format(Locale.getDefault(), "\nRemaining money to spend: %.2f", (windowPlannedSum - totalSpent));
+                    totalSumString += String.format(Locale.getDefault(), "\nParticipants", participantsString);
                 }
             }
             windowPlannedSumCursor.close();
         }
 
         // Text view showing the total amount of money spent
-        TextView totalSumTextView =  findViewById(R.id.totals_item_text_view);
+        TextView totalSumTextView = findViewById(R.id.totals_item_text_view);
         totalSumTextView.setText(totalSumString);
 
         ImageButton addItemButton = findViewById(R.id.addItemButton);
@@ -173,54 +173,77 @@ public class ItemsActivity extends AppCompatActivity {
                 AddItemDialogFragment addItemDialog = new AddItemDialogFragment();
                 Bundle args = new Bundle();
                 args.putLong("window_id", windowId);
+                args.putString("window_participants", participantsString);
                 addItemDialog.setArguments(args);
                 addItemDialog.show(ft, "dialog");
             }
         });
 
-        // Create participants list
-        if (participants.length > 0) {
-            ConstraintSet participantsSet = new ConstraintSet();
-            ConstraintLayout layoutParticipants = findViewById(R.id.layout_participants_list);
+        if (participantsString != null) {
+            final String[] participants = participantsString.split(",");
 
-            boolean firstParticipant = true;
-            int previousParticipantViewId = 0;
+            // Create participants list
+            if (participants.length > 0) {
+                ConstraintSet participantsSet = new ConstraintSet();
+                ConstraintLayout layoutParticipants = findViewById(R.id.layout_participants_list);
 
-            for (int i = 0; i < participants.length; i++) {
-                String participantName = participants[i];
-                Cursor debtCursor = db.debt().selectByWindowIdAndDebtor(windowId, participantName);
+                boolean firstParticipant = true;
+                int previousParticipantViewId = 0;
 
-                TextView participantView = new TextView(this);
+                for (int i = 0; i < participants.length; i++) {
+                    String participantText = participants[i];
 
-                String participantText = participantName;
+                    // select debts for other participants
+                    for (int j = 0; j < participants.length; j++) {
+                        if (participants[i].equals(participants[j])) {
+                            continue;
+                        }
+                        Log.d("DEBUG", String.format("Participants: %s and %s", participants[i], participants[j]));
 
-                if (debtCursor.getCount() > 0) {
-                    participantText += "\nOwns:\n";
+                        Cursor ownedDebtCursor = db.debt().selectPersonalDebt(participants[i], participants[j], windowId);
+                        Cursor ownDebtCursor = db.debt().selectPersonalDebt(participants[j], participants[i], windowId);
+
+                        double ownDebt = 0;
+                        double ownedDebt = 0;
+
+                        if (ownDebtCursor.moveToFirst()) {
+                            ownDebt = ownDebtCursor.getDouble(0);
+                        }
+
+                        if (ownedDebtCursor.moveToFirst()) {
+                            ownedDebt = ownedDebtCursor.getDouble(0);
+                        }
+
+                        //TODO cache this shit
+                        double currentParticipantDebt = ownDebt - ownedDebt;
+
+                        if (currentParticipantDebt > 0) {
+                            participantText += String.format(Locale.getDefault(), "\nOwns: %.2f to %s\n", currentParticipantDebt, participants[j]);
+                        }
+
+                        ownedDebtCursor.close();
+                        ownDebtCursor.close();
+                    }
+
+                    TextView participantView = new TextView(this);
+
+                    participantView.setText(participantText);
+                    layoutParticipants.addView(participantView);
+                    participantView.setId(View.generateViewId());
+                    participantsSet.clone(layoutParticipants);
+
+                    if (firstParticipant) {
+                        participantsSet.connect(participantView.getId(), ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP, 40);
+
+                        firstParticipant = false;
+                    } else {
+                        participantsSet.connect(participantView.getId(), ConstraintSet.TOP, previousParticipantViewId, ConstraintSet.BOTTOM, 40);
+                    }
+                    participantsSet.connect(participantView.getId(), ConstraintSet.LEFT, ConstraintSet.PARENT_ID, ConstraintSet.LEFT, 40);
+                    participantsSet.applyTo(layoutParticipants);
+
+                    previousParticipantViewId = participantView.getId();
                 }
-
-                while (debtCursor.moveToNext()) {
-                    double ownedAmount = debtCursor.getDouble(debtCursor.getColumnIndex("amount"));
-                    String owner = debtCursor.getString(debtCursor.getColumnIndex("owner"));
-
-                    participantText += "\n" + ownedAmount + " to " + owner;
-                }
-
-                participantView.setText(participantText);
-                layoutParticipants.addView(participantView);
-                participantView.setId(View.generateViewId());
-                participantsSet.clone(layoutParticipants);
-
-                if (firstParticipant) {
-                    participantsSet.connect(participantView.getId(), ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP, 40);
-
-                    firstParticipant = false;
-                } else {
-                    participantsSet.connect(participantView.getId(), ConstraintSet.TOP, previousParticipantViewId, ConstraintSet.BOTTOM, 40);
-                }
-                participantsSet.connect(participantView.getId(), ConstraintSet.LEFT, ConstraintSet.PARENT_ID, ConstraintSet.LEFT, 40);
-                participantsSet.applyTo(layoutParticipants);
-
-                previousParticipantViewId = participantView.getId();
             }
         }
 
@@ -246,11 +269,4 @@ public class ItemsActivity extends AppCompatActivity {
             }
         });
     }
-
-    //protected void updateAddItemDialogLayout(ArrayList<String> participants)
-    //{
-      //  View myFragmentView = getLayoutInflater().inflate(R.layout.dialog_add_item, null);
-        //ViewGroup insertionPoint = findViewById(R.id.participant_checkbox_layout);
-        //insertionPoint.addView(myFragmentView, 0, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-    //}
 }

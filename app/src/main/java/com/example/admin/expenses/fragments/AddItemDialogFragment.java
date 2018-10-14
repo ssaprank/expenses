@@ -19,6 +19,7 @@ import android.widget.LinearLayout;
 import android.widget.Spinner;
 
 import com.example.admin.expenses.R;
+import com.example.admin.expenses.data.Debt;
 import com.example.admin.expenses.data.ExpensesDatabase;
 import com.example.admin.expenses.data.Item;
 
@@ -42,48 +43,38 @@ public class AddItemDialogFragment extends DialogFragment {
         // Pass null as the parent view because its going in the dialog layout
         builder.setView(myFragmentView);
 
-        Spinner itemOwnerSpinner = myFragmentView.findViewById(R.id.item_owner);
         ArrayList<String> participants = new ArrayList<>();
+        final Spinner itemOwnerSpinner = myFragmentView.findViewById(R.id.item_owner);
 
-        Cursor participantsCursor = db.window().selectParticipantsById(getArguments().getLong("window_id"));
+        try{
+            String[] windowParticipants = getArguments().getString("window_participants").split(",");
+            participants = new ArrayList<>(Arrays.asList(windowParticipants));
 
-        while (participantsCursor.moveToNext()) {
-            participants = new ArrayList<>(Arrays.asList(participantsCursor.getString(0).split(",")));
+            ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_spinner_item, participants);
 
-            ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<String>
-                    (getActivity(), android.R.layout.simple_spinner_item, participants);
-
-            spinnerArrayAdapter.setDropDownViewResource(android.R.layout
-                    .simple_spinner_dropdown_item);
+            spinnerArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 
             itemOwnerSpinner.setAdapter(spinnerArrayAdapter);
-        }
 
-        // Now create checkboxes for all the debtors (by default all are checked)
-        for (int i = 0; i < participants.size(); i++) {
-            CheckBox participantCheckbox = new CheckBox(getActivity());
-            participantCheckbox.setChecked(true);
-            participantCheckbox.setText(participants.get(i));
-            participantCheckbox.setId(View.generateViewId());
-            participantCheckbox.setTag("participant_checkbox_" + participants.get(i));
+            // Now create checkboxes for all the debtors (by default all are checked)
+            for (int i = 0; i < participants.size(); i++) {
+                CheckBox participantCheckbox = new CheckBox(getActivity());
+                participantCheckbox.setChecked(true);
+                participantCheckbox.setText(participants.get(i));
+                participantCheckbox.setId(View.generateViewId());
+                participantCheckbox.setTag("participant_checkbox_" + participants.get(i));
 
-            LinearLayout lay = myFragmentView.findViewById(R.id.participant_checkbox_layout);
-            lay.addView(participantCheckbox);
-        }
+                LinearLayout lay = myFragmentView.findViewById(R.id.participant_checkbox_layout);
+                lay.addView(participantCheckbox);
+            }
+        } catch (NullPointerException e) {}
+
+        final ArrayList<String> existingParticipants = participants;
 
         builder.setPositiveButton(R.string.confirm_adding_window, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int id) {
-                Item item = null;
-                try {
-                    item = new Item();
-                } catch (ClassNotFoundException e) {
-                    Log.d("DEBUG", "Item class was not found");
-                    AddItemDialogFragment.this.dismiss();
-                    Intent intent = getActivity().getIntent();
-                    getActivity().finish();
-                    startActivity(intent);
-                }
+                Item item = new Item();
 
                 EditText descriptionView = myFragmentView.findViewById(R.id.item_description);
                 EditText sumView = myFragmentView.findViewById(R.id.item_sum);
@@ -92,6 +83,46 @@ public class AddItemDialogFragment extends DialogFragment {
                 item.sum = Double.parseDouble(sumView.getText().toString());
                 item.created_timestamp = System.currentTimeMillis() / 1000;
 
+                if (item.sum > 0 && existingParticipants.size() > 0) {
+                    //calculate equal share
+                    ArrayList<String> actualParticipants = new ArrayList<>();
+
+                    for (int i = 0; i < existingParticipants.size(); i++) {
+                        CheckBox participantCheckbox = myFragmentView.findViewWithTag("participant_checkbox_" + existingParticipants.get(i));
+                        if (participantCheckbox.isChecked()) {
+                            actualParticipants.add(existingParticipants.get(i));
+                        }
+                    }
+
+                    if (actualParticipants.size() > 0) {
+                        double equalShare = item.sum / actualParticipants.size();
+                        String debtOwner = itemOwnerSpinner.getSelectedItem().toString();
+
+                        for (int i = 0; i < actualParticipants.size(); i++) {
+                            Debt debt = new Debt();
+                            debt.amount = equalShare;
+                            debt.owner = debtOwner;
+                            debt.debtor = actualParticipants.get(i);
+                            debt.windowId = getArguments().getLong("window_id");
+
+                            db.beginTransaction();
+                            try {
+                                long newid = db.debt().insert(debt);
+                                db.setTransactionSuccessful();
+                            } catch (Exception e) {
+                                Log.d("DATABASE", "Exception was thrown while inserting new debt:\n" + e.getMessage());
+                            } finally {
+                                db.endTransaction();
+                                AddItemDialogFragment.this.dismiss();
+                                Intent intent = getActivity().getIntent();
+                                getActivity().finish();
+                                startActivity(intent);
+                            }
+                        }
+                    }
+                }
+
+                // Finally insert the item and close the dialog
                 db.beginTransaction();
                 try {
                     long newid = db.item().insert(item);

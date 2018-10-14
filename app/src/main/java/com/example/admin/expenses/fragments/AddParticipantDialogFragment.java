@@ -45,7 +45,7 @@ public class AddParticipantDialogFragment extends DialogFragment {
                     String windowParticipants = getArguments().getString("window_participants");
                     String fullParticipantsString = "";
 
-                    if (windowParticipants.isEmpty()) {
+                    if (windowParticipants == null || windowParticipants.isEmpty()) {
                         fullParticipantsString = participantName;
                     } else {
                         fullParticipantsString = windowParticipants + "," + participantName;

@@ -9,30 +9,20 @@ import android.arch.persistence.room.Entity;
 public class Item {
     public static final String TABLE_NAME = "Item";
 
-    public static final String WINDOW_TABLE_NAME = "com.example.admin.expenses.data.Window";
-
-    /** The unique ID of the item. */
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(index = true, name = "id")
     public long id;
 
-    /** Id of the window the Item belongs to */
     @ColumnInfo(name="window_id")
     @ForeignKey(entity = Window.class, parentColumns = {"id"}, childColumns = {"windowID"}, onDelete = ForeignKey.CASCADE)
     public long windowID;
 
-    /** Item description */
     @ColumnInfo(name = "description")
     public String description;
 
-    /** Amount spent/gained. */
     @ColumnInfo(name = "sum")
     public double sum;
 
-    /** Timestamp of item creation. */
     @ColumnInfo(name = "timestamp")
     public long created_timestamp;
-
-    public Item() throws ClassNotFoundException {
-    }
 }
