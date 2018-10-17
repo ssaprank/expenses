@@ -178,8 +178,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void setActionBar(String heading) {
-        // TODO Auto-generated method stub
-
         ActionBar actionBar = getSupportActionBar();
         actionBar.setHomeButtonEnabled(true);
         actionBar.setDisplayHomeAsUpEnabled(false);
