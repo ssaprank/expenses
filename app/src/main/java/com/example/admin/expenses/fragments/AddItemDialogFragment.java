@@ -1,7 +1,10 @@
 package com.example.admin.expenses.fragments;
 
+import android.app.Activity;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Entity;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
@@ -28,115 +31,56 @@ import java.util.Arrays;
 
 public class AddItemDialogFragment extends DialogFragment {
 
+    Activity activity;
+    View dialogView;
+    Spinner itemOwnerSpinner;
+    String[] participants;
+    ExpensesDatabase db;
+    long windowID;
+
     @Override
     @NonNull
     public Dialog onCreateDialog(Bundle savedInstanceState) {
-        final ExpensesDatabase db = ExpensesDatabase.getInstance(getActivity().getApplicationContext());
-        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        activity = getActivity();
 
-        // Get the layout inflater
-        LayoutInflater inflater = getActivity().getLayoutInflater();
+        if (activity == null) {
+            logErrorAndQuit("No activity found.");
+        }
 
-        final View myFragmentView = inflater.inflate(R.layout.dialog_add_item, null);
+        Context activityContext = activity.getApplicationContext();
+        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+        LayoutInflater inflater = activity.getLayoutInflater();
 
-        // Inflate and set the layout for the dialog
-        // Pass null as the parent view because its going in the dialog layout
-        builder.setView(myFragmentView);
+        db = ExpensesDatabase.getInstance(activityContext);
+        dialogView = inflater.inflate(R.layout.dialog_add_item, null);
+        itemOwnerSpinner = dialogView.findViewById(R.id.item_owner);
+        builder.setView(dialogView);
 
-        ArrayList<String> participants = new ArrayList<>();
-        final Spinner itemOwnerSpinner = myFragmentView.findViewById(R.id.item_owner);
+        Bundle arguments = getArguments();
 
-        try{
-            String[] windowParticipants = getArguments().getString("window_participants").split(",");
-            participants = new ArrayList<>(Arrays.asList(windowParticipants));
+        if (arguments == null) {
+            logErrorAndQuit("No arguments from activity");
+        }
 
-            ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_spinner_item, participants);
+        String participantsArg = arguments.getString("window_participants");
+        windowID = arguments.getLong("window_id");
 
-            spinnerArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-
-            itemOwnerSpinner.setAdapter(spinnerArrayAdapter);
-
-            // Now create checkboxes for all the debtors (by default all are checked)
-            for (int i = 0; i < participants.size(); i++) {
-                CheckBox participantCheckbox = new CheckBox(getActivity());
-                participantCheckbox.setChecked(true);
-                participantCheckbox.setText(participants.get(i));
-                participantCheckbox.setId(View.generateViewId());
-                participantCheckbox.setTag("participant_checkbox_" + participants.get(i));
-
-                LinearLayout lay = myFragmentView.findViewById(R.id.participant_checkbox_layout);
-                lay.addView(participantCheckbox);
-            }
-        } catch (NullPointerException e) {}
-
-        final ArrayList<String> existingParticipants = participants;
+        if (participantsArg == null || windowID == 0) {
+            logErrorAndQuit("Activity arguments are incomplete or missing.");
+        } else {
+            createViewsForParticipants(participantsArg);
+        }
 
         builder.setPositiveButton(R.string.confirm_adding_window, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int id) {
-                Item item = new Item();
+                Item item = getItemFromDialogForm();
 
-                EditText descriptionView = myFragmentView.findViewById(R.id.item_description);
-                EditText sumView = myFragmentView.findViewById(R.id.item_sum);
-                item.windowID = getArguments().getLong("window_id");
-                item.description = descriptionView.getText().toString();
-                item.sum = Double.parseDouble(sumView.getText().toString());
-                item.created_timestamp = System.currentTimeMillis() / 1000;
-
-                if (item.sum > 0 && existingParticipants.size() > 0) {
-                    //calculate equal share
-                    ArrayList<String> actualParticipants = new ArrayList<>();
-
-                    for (int i = 0; i < existingParticipants.size(); i++) {
-                        CheckBox participantCheckbox = myFragmentView.findViewWithTag("participant_checkbox_" + existingParticipants.get(i));
-                        if (participantCheckbox.isChecked()) {
-                            actualParticipants.add(existingParticipants.get(i));
-                        }
-                    }
-
-                    if (actualParticipants.size() > 0) {
-                        double equalShare = item.sum / actualParticipants.size();
-                        String debtOwner = itemOwnerSpinner.getSelectedItem().toString();
-
-                        for (int i = 0; i < actualParticipants.size(); i++) {
-                            Debt debt = new Debt();
-                            debt.amount = equalShare;
-                            debt.owner = debtOwner;
-                            debt.debtor = actualParticipants.get(i);
-                            debt.windowId = getArguments().getLong("window_id");
-
-                            db.beginTransaction();
-                            try {
-                                long newid = db.debt().insert(debt);
-                                db.setTransactionSuccessful();
-                            } catch (Exception e) {
-                                Log.d("DATABASE", "Exception was thrown while inserting new debt:\n" + e.getMessage());
-                            } finally {
-                                db.endTransaction();
-                                AddItemDialogFragment.this.dismiss();
-                                Intent intent = getActivity().getIntent();
-                                getActivity().finish();
-                                startActivity(intent);
-                            }
-                        }
-                    }
+                if (item.sum > 0 && participants.length > 0) {
+                    calculateAndInsertEqualShare(item);
                 }
 
-                // Finally insert the item and close the dialog
-                db.beginTransaction();
-                try {
-                    long newid = db.item().insert(item);
-                    db.setTransactionSuccessful();
-                    Log.d("DATABASE", String.format("ID %d was inserted", newid));
-                } catch (Exception e) {
-                    Log.d("DATABASE", "Exception was thrown while inserting new window:\n" + e.getMessage());
-                } finally {
-                    db.endTransaction();
-                    AddItemDialogFragment.this.dismiss();
-                    Intent intent = getActivity().getIntent();
-                    getActivity().finish();
-                    startActivity(intent);
-                }
+                insertItem(item);
             }
         });
 
@@ -147,5 +91,140 @@ public class AddItemDialogFragment extends DialogFragment {
         });
 
         return builder.create();
+    }
+
+    private void createViewsForParticipants(String participantsArg) {
+        participants = participantsArg.split(",");
+        fillSpinnerWithParticipants();
+        createCheckboxesForParticipants();
+    }
+
+    private void fillSpinnerWithParticipants() {
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(activity, android.R.layout.simple_spinner_item, participants);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        itemOwnerSpinner.setAdapter(adapter);
+    }
+
+    private void createCheckboxesForParticipants() {
+        LinearLayout checkboxContainerLayout = dialogView.findViewById(R.id.participant_checkbox_layout);
+
+        for (int i = 0; i < participants.length; i++) {
+            CheckBox checkbox = getParticipantCheckbox(participants[i]);
+            checkboxContainerLayout.addView(checkbox);
+        }
+    }
+
+    private CheckBox getParticipantCheckbox(String participant) {
+        CheckBox participantCheckbox = new CheckBox(getActivity());
+        participantCheckbox.setChecked(true);
+        participantCheckbox.setText(participant);
+        participantCheckbox.setId(View.generateViewId());
+        participantCheckbox.setTag("participant_checkbox_" + participant);
+        return participantCheckbox;
+    }
+
+    private Item getItemFromDialogForm() {
+        Item item = new Item();
+
+        EditText descriptionView = dialogView.findViewById(R.id.item_description);
+        EditText sumView = dialogView.findViewById(R.id.item_sum);
+        item.windowID = getArguments().getLong("window_id");
+        item.description = descriptionView.getText().toString();
+        item.sum = Double.parseDouble(sumView.getText().toString());
+        item.created_timestamp = System.currentTimeMillis() / 1000;
+
+        return item;
+    }
+
+    private void calculateAndInsertEqualShare(Item item) {
+        ArrayList<String> sharingParticipants = getSharingParticipants();
+
+        if (sharingParticipants.size() > 0) {
+            double equalShare = item.sum / sharingParticipants.size();
+
+            insertDebtsForSharingParticipants(sharingParticipants, equalShare);
+        }
+    }
+
+    private ArrayList<String> getSharingParticipants() {
+        ArrayList<String> sharingParticipants = new ArrayList<>();
+
+        for (int i = 0; i < participants.length; i++) {
+            if (isParticipantCheckboxChecked(participants[i])) {
+                sharingParticipants.add(participants[i]);
+            }
+        }
+
+        return sharingParticipants;
+    }
+
+    private boolean isParticipantCheckboxChecked(String participant) {
+        CheckBox participantCheckbox = dialogView.findViewWithTag("participant_checkbox_" + participant);
+
+        return participantCheckbox.isChecked();
+    }
+
+    private String getItemOwner() {
+        return itemOwnerSpinner.getSelectedItem().toString();
+    }
+
+    private void insertDebtsForSharingParticipants(ArrayList<String> sharingParticipants, double equalShare) {
+        String debtOwner = getItemOwner();
+
+        for (int i = 0; i < sharingParticipants.size(); i++) {
+            Debt debt = createDebt(equalShare, debtOwner, sharingParticipants.get(i));
+            insertDebt(debt);
+        }
+    }
+
+    private Debt createDebt(double sum, String owner, String debtor) {
+        Debt debt = new Debt();
+        debt.amount = sum;
+        debt.owner = owner;
+        debt.debtor = debtor;
+        debt.windowId = windowID;
+        return debt;
+    }
+
+    private void insertDebt(Debt debt) {
+        try {
+            db.beginTransaction();
+            db.debt().insert(debt);
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            Log.d("DATABASE", "Exception was thrown while inserting new debt:\n" + e.getMessage());
+        } finally {
+            db.endTransaction();
+            closeDialogAndRestartActivity();
+        }
+    }
+
+    private void insertItem(Item item) {
+        try {
+            db.beginTransaction();
+            db.item().insert(item);
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            Log.d("DATABASE", "Exception was thrown while inserting new item:\n" + e.getMessage());
+        } finally {
+            db.endTransaction();
+            closeDialogAndRestartActivity();
+        }
+    }
+
+    private void logErrorAndQuit(String errorMessage) {
+        Log.d("RUNTIME",getClass() + ": " + errorMessage);
+        closeDialogAndRestartActivity();
+    }
+
+    private void closeDialogAndRestartActivity() {
+        AddItemDialogFragment.this.dismiss();
+        restartActivity();
+    }
+
+    private void restartActivity() {
+        Intent intent = activity.getIntent();
+        activity.finish();
+        startActivity(intent);
     }
 }
