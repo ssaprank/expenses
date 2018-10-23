@@ -26,8 +26,8 @@ public class Debt {
     @ColumnInfo(name = "amount")
     public double amount;
 
-    @ColumnInfo(name = "window_id")
     @NonNull
+    @ColumnInfo(name = "window_id")
     @ForeignKey(entity = Window.class, parentColumns = {"id"}, childColumns = {"windowID"}, onDelete = ForeignKey.CASCADE)
-    public double windowId;
+    public double windowID;
 }

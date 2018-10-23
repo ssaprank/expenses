@@ -13,10 +13,6 @@ public class Item {
     @ColumnInfo(index = true, name = "id")
     public long id;
 
-    @ColumnInfo(name="window_id")
-    @ForeignKey(entity = Window.class, parentColumns = {"id"}, childColumns = {"windowID"}, onDelete = ForeignKey.CASCADE)
-    public long windowID;
-
     @ColumnInfo(name = "description")
     public String description;
 
@@ -25,4 +21,8 @@ public class Item {
 
     @ColumnInfo(name = "timestamp")
     public long created_timestamp;
+
+    @ColumnInfo(name="window_id")
+    @ForeignKey(entity = Window.class, parentColumns = {"id"}, childColumns = {"windowID"}, onDelete = ForeignKey.CASCADE)
+    public long windowID;
 }

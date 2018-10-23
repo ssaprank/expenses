@@ -21,8 +21,7 @@ public class Window {
     @ColumnInfo(name = "planned_sum")
     public double planned;
 
-    /** People participating in spendings of this window. */
-    /** Comma separated string */
+    /** Comma separated string of people participating in this window. */
     @ColumnInfo(name = "participants")
     public String participants;
 }

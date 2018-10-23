@@ -1,6 +1,8 @@
 package com.example.admin.expenses.fragments;
 
+import android.app.Activity;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
@@ -17,53 +19,38 @@ import com.example.admin.expenses.data.ExpensesDatabase;
 
 public class AddParticipantDialogFragment extends DialogFragment {
 
+    Activity activity;
+    View dialogView;
+    ExpensesDatabase db;
+    long windowID;
+    String windowParticipants;
+
     @Override
     @NonNull
     public Dialog onCreateDialog(Bundle savedInstanceState)
     {
-        final ExpensesDatabase db = ExpensesDatabase.getInstance(getActivity().getApplicationContext());
-        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        activity = getActivity();
 
-        // Get the layout inflater
-        LayoutInflater inflater = getActivity().getLayoutInflater();
+        if (activity == null) {
+            logErrorAndQuit("No activity found.");
+        }
 
-        final View myFragmentView = inflater.inflate(R.layout.dialog_add_participant, null);
+        Context activityContext = activity.getApplicationContext();
+        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+        LayoutInflater inflater = activity.getLayoutInflater();
+        db = ExpensesDatabase.getInstance(activityContext);
+        dialogView = inflater.inflate(R.layout.dialog_add_participant, null);
 
-        // Inflate and set the layout for the dialog
-        // Pass null as the parent view because its going in the dialog layout
-        builder.setView(myFragmentView);
-
+        builder.setView(dialogView);
         builder.setPositiveButton(R.string.confirm_adding_window, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int id) {
+                String newParticipantName = getParticipantNameFromTextView();
 
-                EditText participantNameView = myFragmentView.findViewById(R.id.participant_name);
-                String participantName = participantNameView.getText().toString();
-
-                if (!participantName.isEmpty()) {
-                    long windowId = getArguments().getLong("window_id");
-                    String windowParticipants = getArguments().getString("window_participants");
-                    String fullParticipantsString = "";
-
-                    if (windowParticipants == null || windowParticipants.isEmpty()) {
-                        fullParticipantsString = participantName;
-                    } else {
-                        fullParticipantsString = windowParticipants + "," + participantName;
-                    }
-
-                    db.beginTransaction();
-                    try {
-                        db.window().updateParticipantsById(fullParticipantsString, windowId);
-                        db.setTransactionSuccessful();
-                    } catch (Exception e) {
-                        Log.d("DATABASE", "Exception was thrown while inserting new window:\n" + e.getMessage());
-                    } finally {
-                        db.endTransaction();
-                        AddParticipantDialogFragment.this.dismiss();
-                        Intent intent = getActivity().getIntent();
-                        getActivity().finish();
-                        startActivity(intent);
-                    }
+                if (!newParticipantName.isEmpty()) {
+                    parseWindowArguments();
+                    appendToParticipants(newParticipantName);
+                    updateWindowParticipants();
                 }
             }
         });
@@ -75,5 +62,62 @@ public class AddParticipantDialogFragment extends DialogFragment {
         });
 
         return builder.create();
+    }
+
+    private String getParticipantNameFromTextView() {
+        EditText participantNameView = dialogView.findViewById(R.id.participant_name);
+        return participantNameView.getText().toString();
+    }
+
+    private void parseWindowArguments() {
+        Bundle arguments = getArguments();
+
+        if (arguments == null) {
+            logErrorAndQuit("No window arguments provided");
+        }
+
+        try {
+            windowID = arguments.getLong("window_id");
+            windowParticipants = arguments.getString("window_participants");
+        } catch (NullPointerException ex) {
+            logErrorAndQuit("Window arguments are incomplete");
+        }
+    }
+
+    private void appendToParticipants(String newName) {
+        if (windowParticipants == null || windowParticipants.isEmpty()) {
+            windowParticipants = newName;
+        } else {
+            windowParticipants = windowParticipants + "," + newName;
+        }
+    }
+
+    private void updateWindowParticipants() {
+        try {
+            db.beginTransaction();
+            db.window().updateParticipantsByWindowId(windowParticipants, windowID);
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            Log.d("DATABASE", "Exception was thrown while inserting new participant:\n" + e.getMessage());
+        } finally {
+            db.endTransaction();
+            closeDialogAndRestartActivity();
+        }
+    }
+
+    private void logErrorAndQuit(String errorMessage) {
+        Log.d("RUNTIME",getClass() + ": " + errorMessage);
+        closeDialogAndRestartActivity();
+    }
+
+    private void closeDialogAndRestartActivity() {
+        AddParticipantDialogFragment.this.dismiss();
+        restartActivity();
+    }
+
+    private void restartActivity() {
+        Intent intent = activity.getIntent();
+        activity.finish();
+        startActivity(intent);
     }
 }

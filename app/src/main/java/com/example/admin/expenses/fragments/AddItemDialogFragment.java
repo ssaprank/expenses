@@ -182,7 +182,7 @@ public class AddItemDialogFragment extends DialogFragment {
         debt.amount = sum;
         debt.owner = owner;
         debt.debtor = debtor;
-        debt.windowId = windowID;
+        debt.windowID = windowID;
         return debt;
     }
 
