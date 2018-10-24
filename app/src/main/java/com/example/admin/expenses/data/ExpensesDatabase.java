@@ -1,5 +1,6 @@
 package com.example.admin.expenses.data;
 
+import android.arch.persistence.room.Dao;
 import android.arch.persistence.room.Database;
 import android.arch.persistence.room.Room;
 import android.arch.persistence.room.RoomDatabase;
@@ -9,7 +10,7 @@ import android.support.annotation.VisibleForTesting;
 /**
  * The Room database.
  */
-@Database(entities = {Window.class, Item.class, Debt.class}, version = 5, exportSchema = false)
+@Database(entities = {BaseEntity.class, Window.class, Item.class, Debt.class}, version = 6, exportSchema = false)
 public abstract class ExpensesDatabase extends RoomDatabase {
 
     /**
@@ -32,6 +33,19 @@ public abstract class ExpensesDatabase extends RoomDatabase {
 
     /** The only instance */
     private static ExpensesDatabase sInstance;
+
+    public BaseDao getDaoObjectForEntity(BaseEntity entity)
+    {
+        if (entity instanceof Item) {
+            return item();
+        } else if (entity instanceof Debt) {
+            return debt();
+        } else if (entity instanceof Window) {
+            return window();
+        }
+
+        return null;
+    }
 
     /**
      * Gets the singleton instance of ExpensesDatabase.

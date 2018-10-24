@@ -17,11 +17,8 @@ import android.widget.EditText;
 import com.example.admin.expenses.R;
 import com.example.admin.expenses.data.ExpensesDatabase;
 
-public class AddParticipantDialogFragment extends DialogFragment {
+public class AddParticipantDialogFragment extends AddingDialogFragment {
 
-    Activity activity;
-    View dialogView;
-    ExpensesDatabase db;
     long windowID;
     String windowParticipants;
 
@@ -103,21 +100,5 @@ public class AddParticipantDialogFragment extends DialogFragment {
             db.endTransaction();
             closeDialogAndRestartActivity();
         }
-    }
-
-    private void logErrorAndQuit(String errorMessage) {
-        Log.d("RUNTIME",getClass() + ": " + errorMessage);
-        closeDialogAndRestartActivity();
-    }
-
-    private void closeDialogAndRestartActivity() {
-        AddParticipantDialogFragment.this.dismiss();
-        restartActivity();
-    }
-
-    private void restartActivity() {
-        Intent intent = activity.getIntent();
-        activity.finish();
-        startActivity(intent);
     }
 }

@@ -8,20 +8,17 @@ import android.arch.persistence.room.Query;
 import android.database.Cursor;
 
 @Dao
-public interface WindowDao {
-
-    @Insert
-    long insert(Window window);
+public abstract class WindowDao implements BaseDao<Window> {
 
     @Query("SELECT * FROM " + Window.TABLE_NAME)
-    Cursor selectAll();
+    public abstract Cursor selectAll();
 
     @Query("SELECT * FROM " + Window.TABLE_NAME + " WHERE id = :id")
-    Cursor selectById(long id);
+    public abstract Cursor selectById(long id);
 
     @Query("DELETE FROM " + Window.TABLE_NAME + " WHERE id = :id")
-    int deleteById(long id);
+    public abstract int deleteById(long id);
 
     @Query("UPDATE " + Window.TABLE_NAME + " SET participants = :participants WHERE id = :id")
-    int updateParticipantsByWindowId(String participants, long id);
+    public abstract int updateParticipantsByWindowId(String participants, long id);
 }

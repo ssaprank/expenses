@@ -22,6 +22,7 @@ import android.widget.LinearLayout;
 import android.widget.Spinner;
 
 import com.example.admin.expenses.R;
+import com.example.admin.expenses.data.BaseEntity;
 import com.example.admin.expenses.data.Debt;
 import com.example.admin.expenses.data.ExpensesDatabase;
 import com.example.admin.expenses.data.Item;
@@ -29,13 +30,10 @@ import com.example.admin.expenses.data.Item;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class AddItemDialogFragment extends DialogFragment {
+public class AddItemDialogFragment extends AddingDialogFragment {
 
-    Activity activity;
-    View dialogView;
     Spinner itemOwnerSpinner;
     String[] participants;
-    ExpensesDatabase db;
     long windowID;
 
     @Override
@@ -80,7 +78,7 @@ public class AddItemDialogFragment extends DialogFragment {
                     calculateAndInsertEqualShare(item);
                 }
 
-                insertItem(item);
+                insertEntity(item);
             }
         });
 
@@ -173,7 +171,7 @@ public class AddItemDialogFragment extends DialogFragment {
 
         for (int i = 0; i < sharingParticipants.size(); i++) {
             Debt debt = createDebt(equalShare, debtOwner, sharingParticipants.get(i));
-            insertDebt(debt);
+            insertEntity(debt);
         }
     }
 
@@ -184,47 +182,5 @@ public class AddItemDialogFragment extends DialogFragment {
         debt.debtor = debtor;
         debt.windowID = windowID;
         return debt;
-    }
-
-    private void insertDebt(Debt debt) {
-        try {
-            db.beginTransaction();
-            db.debt().insert(debt);
-            db.setTransactionSuccessful();
-        } catch (Exception e) {
-            Log.d("DATABASE", "Exception was thrown while inserting new debt:\n" + e.getMessage());
-        } finally {
-            db.endTransaction();
-            closeDialogAndRestartActivity();
-        }
-    }
-
-    private void insertItem(Item item) {
-        try {
-            db.beginTransaction();
-            db.item().insert(item);
-            db.setTransactionSuccessful();
-        } catch (Exception e) {
-            Log.d("DATABASE", "Exception was thrown while inserting new item:\n" + e.getMessage());
-        } finally {
-            db.endTransaction();
-            closeDialogAndRestartActivity();
-        }
-    }
-
-    private void logErrorAndQuit(String errorMessage) {
-        Log.d("RUNTIME",getClass() + ": " + errorMessage);
-        closeDialogAndRestartActivity();
-    }
-
-    private void closeDialogAndRestartActivity() {
-        AddItemDialogFragment.this.dismiss();
-        restartActivity();
-    }
-
-    private void restartActivity() {
-        Intent intent = activity.getIntent();
-        activity.finish();
-        startActivity(intent);
     }
 }

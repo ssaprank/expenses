@@ -1,5 +1,6 @@
 package com.example.admin.expenses.fragments;
 
+import android.app.Activity;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -16,51 +17,29 @@ import com.example.admin.expenses.R;
 import com.example.admin.expenses.data.ExpensesDatabase;
 import com.example.admin.expenses.data.Window;
 
-public class AddWindowDialogFragment extends DialogFragment {
+public class AddWindowDialogFragment extends AddingDialogFragment {
 
     @Override
     @NonNull
     public Dialog onCreateDialog(Bundle savedInstanceState) {
-        final ExpensesDatabase db = ExpensesDatabase.getInstance(getActivity().getApplicationContext());
+        activity = getActivity();
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-        // Get the layout inflater
-        LayoutInflater inflater = getActivity().getLayoutInflater();
+        if (activity == null) {
+            logErrorAndQuit("No activity found.");
+        }
 
-        final View myFragmentView = inflater.inflate(R.layout.dialog_add_window, null);
+        db = ExpensesDatabase.getInstance(activity.getApplicationContext());
 
-        // Inflate and set the layout for the dialog
-        // Pass null as the parent view because its going in the dialog layout
-        builder.setView(myFragmentView);
+        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+        LayoutInflater inflater = activity.getLayoutInflater();
+        dialogView = inflater.inflate(R.layout.dialog_add_window, null);
+        builder.setView(dialogView);
 
         builder.setPositiveButton(R.string.confirm_adding_window, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int id) {
-                Window window = new Window();
-                EditText nameView = myFragmentView.findViewById(R.id.windowName);
-                EditText plannedSumView = myFragmentView.findViewById(R.id.plannedSum);
-                window.name = nameView.getText().toString();
-
-                try {
-                    window.planned = Double.parseDouble(plannedSumView.getText().toString());
-                } catch (Exception e) {
-                    window.planned = 0;
-                }
-
-                db.beginTransaction();
-                try {
-                    long newid = db.window().insert(window);
-                    db.setTransactionSuccessful();
-                    Log.d("DATABASE", String.format("ID %d was inserted", newid));
-                } catch (Exception e) {
-                    Log.d("DATABASE", "Exception was thrown while inserting new window:\n" + e.getMessage());
-                } finally {
-                    db.endTransaction();
-                    AddWindowDialogFragment.this.dismiss();
-                    Intent intent = getActivity().getIntent();
-                    getActivity().finish();
-                    startActivity(intent);
-                }
+            Window window = getWindowObjectFromViews();
+            insertEntity(window);
             }
         });
 
@@ -71,5 +50,21 @@ public class AddWindowDialogFragment extends DialogFragment {
         });
 
         return builder.create();
+    }
+
+    private Window getWindowObjectFromViews()
+    {
+        Window window = new Window();
+        EditText nameView = dialogView.findViewById(R.id.windowName);
+        EditText plannedSumView = dialogView.findViewById(R.id.plannedSum);
+        window.name = nameView.getText().toString();
+
+        try {
+            window.planned = Double.parseDouble(plannedSumView.getText().toString());
+        } catch (Exception e) {
+            window.planned = 0;
+        }
+
+        return window;
     }
 }

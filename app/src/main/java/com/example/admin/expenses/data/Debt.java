@@ -6,13 +6,9 @@ import android.arch.persistence.room.ForeignKey;
 import android.arch.persistence.room.PrimaryKey;
 import android.support.annotation.NonNull;
 
-@Entity(tableName = Debt.TABLE_NAME)
-public class Debt {
+@Entity(tableName = Debt.TABLE_NAME, inheritSuperIndices = true)
+public class Debt extends BaseEntity{
     public static final String TABLE_NAME = "Debt";
-
-    @PrimaryKey(autoGenerate = true)
-    @ColumnInfo(index = true, name = "id")
-    public long id;
 
     @NonNull
     @ColumnInfo(name = "owner")

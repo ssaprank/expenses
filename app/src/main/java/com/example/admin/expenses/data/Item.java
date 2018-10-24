@@ -5,13 +5,9 @@ import android.arch.persistence.room.ForeignKey;
 import android.arch.persistence.room.PrimaryKey;
 import android.arch.persistence.room.Entity;
 
-@Entity(tableName = Item.TABLE_NAME)
-public class Item {
+@Entity(tableName = Item.TABLE_NAME, inheritSuperIndices = true)
+public class Item extends BaseEntity {
     public static final String TABLE_NAME = "Item";
-
-    @PrimaryKey(autoGenerate = true)
-    @ColumnInfo(index = true, name = "id")
-    public long id;
 
     @ColumnInfo(name = "description")
     public String description;

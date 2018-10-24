@@ -4,14 +4,9 @@ import android.arch.persistence.room.ColumnInfo;
 import android.arch.persistence.room.PrimaryKey;
 import android.arch.persistence.room.Entity;
 
-@Entity(tableName = Window.TABLE_NAME)
-public class Window {
+@Entity(tableName = Window.TABLE_NAME, inheritSuperIndices = true)
+public class Window extends BaseEntity {
     public static final String TABLE_NAME = "Window";
-
-    /** The unique ID of the window. */
-    @PrimaryKey(autoGenerate = true)
-    @ColumnInfo(index = true, name = "id")
-    public long id;
 
     /** Name of the window */
     @ColumnInfo(name = "name")
