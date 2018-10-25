@@ -12,6 +12,9 @@ public abstract class ItemDao implements BaseDao<Item> {
     @Query("SELECT * FROM " + Item.TABLE_NAME + " WHERE window_id = :windowId")
     public abstract Cursor selectByWindowId(long windowId);
 
+    @Query("SELECT SUM(sum) FROM " + Item.TABLE_NAME + " WHERE window_id = :windowId")
+    public abstract double selectTotalAmountByWindowId(long windowId);
+
     @Query("DELETE FROM " + Item.TABLE_NAME + " WHERE id = :id")
     public abstract int deleteById(long id);
 }
