@@ -13,7 +13,7 @@ public abstract class DebtDao implements BaseDao<Debt> {
     public abstract Cursor selectByWindowId(long windowId);
 
     @Query("SELECT SUM(amount) FROM " + Debt.TABLE_NAME + " WHERE owner = :owner AND debtor = :debtor AND window_id = :windowId")
-    public abstract Cursor selectPersonalDebt(String owner, String debtor, long windowId);
+    public abstract double selectPersonalDebt(String owner, String debtor, long windowId);
 
     @Query("DELETE FROM " + Debt.TABLE_NAME + " WHERE owner = :owner AND debtor = :debtor AND window_id = :windowId")
     public abstract int delete(String owner, String debtor, long windowId);

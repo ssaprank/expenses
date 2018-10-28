@@ -16,6 +16,12 @@ public abstract class WindowDao implements BaseDao<Window> {
     @Query("SELECT * FROM " + Window.TABLE_NAME + " WHERE id = :id")
     public abstract Cursor selectById(long id);
 
+    @Query("SELECT planned_sum FROM " + Window.TABLE_NAME + " WHERE id = :id")
+    public abstract double selectPlannedSumByWindowsId(long id);
+
+    @Query("SELECT participants FROM " + Window.TABLE_NAME + " WHERE id = :id")
+    public abstract String selectParticipantsByWindowId(long id);
+
     @Query("DELETE FROM " + Window.TABLE_NAME + " WHERE id = :id")
     public abstract int deleteById(long id);
 
