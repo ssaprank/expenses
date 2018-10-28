@@ -9,11 +9,15 @@ import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
+import android.text.Layout;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TabHost;
 import android.widget.TextView;
 
@@ -21,6 +25,7 @@ import com.example.admin.expenses.data.ExpensesDatabase;
 import com.example.admin.expenses.data.Window;
 import com.example.admin.expenses.fragments.AddItemDialogFragment;
 import com.example.admin.expenses.fragments.AddParticipantDialogFragment;
+import com.example.admin.expenses.helpers.Helper;
 
 import org.w3c.dom.Text;
 
@@ -31,13 +36,19 @@ public class ItemsActivity extends AppCompatActivity {
 
     ExpensesDatabase db;
     ConstraintLayout layoutItems;
-    ConstraintLayout layoutParticipants;
+    LinearLayout layoutParticipants;
     ConstraintSet setItems;
-    ConstraintSet setParticipants;
     String[] participants;
     long windowID;
     long currentItemId;
     double totalSpent;
+    Helper helper;
+    TabHost tabHost;
+
+    final int PARTICIPANT_LIST_ELEMENT_MINIMAL_HEIGHT = 100;
+    final int PARTICIPANT_LIST_ELEMENT_LEFT_PADDING = 10;
+    final int ADD_BUTTON_DIMENSION = 65;
+    final int FONT_SIZE_NORMAL = 10;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,37 +97,45 @@ public class ItemsActivity extends AppCompatActivity {
     {
         db = ExpensesDatabase.getInstance(this);
         setItems = new ConstraintSet();
-        setParticipants = new ConstraintSet();
         layoutItems = findViewById(R.id.layout_item_list);
         layoutParticipants = findViewById(R.id.layout_participants_list);
         windowID = intent.getLongExtra("window_id", 0);
         totalSpent = 0;
         String participantsField = db.window().selectParticipantsByWindowId(windowID);
+
         if (participantsField != null) {
             participants = participantsField.split(",");
         } else {
             participants = new String[0];
         }
+
+        float displayDensity = getResources().getDisplayMetrics().density;
+        helper = new Helper(displayDensity);
+        tabHost = findViewById(R.id.tabHost);
+        tabHost.setup();
     }
 
     private void setUpTabs()
     {
-        TabHost tabHost = findViewById(R.id.tabHost);
-        tabHost.setup();
-
-        // First tab
-        TabHost.TabSpec specs = tabHost.newTabSpec("first");
-        specs.setContent(R.id.tab_layout_items);
-        specs.setIndicator("First Tab");
+        TabHost.TabSpec specs = getTabSpecForTitle("Expenses", R.id.tab_layout_items);
 
         tabHost.addTab(specs);
 
-        // Second tab - for managing participants
-        specs = tabHost.newTabSpec("second");
-        specs.setContent(R.id.tab_layout_participants);
-        specs.setIndicator("Second Tab");
-
+        specs = getTabSpecForTitle("Participants", R.id.tab_layout_participants);
         tabHost.addTab(specs);
+    }
+
+    private TabHost.TabSpec getTabSpecForTitle(String title, int layoutID)
+    {
+        TabHost.TabSpec specs = tabHost.newTabSpec(title);
+
+        View view = LayoutInflater.from(this).inflate(R.layout.tab_title, null);
+        TextView titleView = view.findViewById(R.id.tabsText);
+        titleView.setText(title);
+
+        specs.setIndicator(view);
+        specs.setContent(layoutID);
+        return specs;
     }
 
     private TextView getItemTextView(Cursor cursor)
@@ -201,14 +220,24 @@ public class ItemsActivity extends AppCompatActivity {
     }
 
     private void setAddParticipantsButton() {
-        ImageButton addParticipantButton = findViewById(R.id.addParticipantButton);
+        ImageButton addParticipantButton = new ImageButton(this);
+        LinearLayout imageLayout = new LinearLayout(this);
 
-        addParticipantButton.setOnClickListener(new View.OnClickListener() {
+        imageLayout.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 AddParticipantDialogFragment dialog = new AddParticipantDialogFragment();
                 setAddButtonListener(dialog);
             }
         });
+
+        int dimensionPixels = helper.getPixelsFromDps(ADD_BUTTON_DIMENSION);
+
+        imageLayout.setBackgroundResource(R.drawable.list_item_border);
+        addParticipantButton.setBackgroundResource(R.drawable.add_button);
+        ViewGroup.LayoutParams lp = new ViewGroup.LayoutParams(dimensionPixels, dimensionPixels);
+        addParticipantButton.setLayoutParams(lp);
+        imageLayout.addView(addParticipantButton);
+        layoutParticipants.addView(imageLayout);
     }
 
     private void setAddButtonListener(DialogFragment dialog)
@@ -237,8 +266,6 @@ public class ItemsActivity extends AppCompatActivity {
 
             TextView participantView = getParticipantListElementView(participants[i]);
 
-            setParticipants.clone(layoutParticipants);
-
             placeParticipantViewOnList(participantView, previousParticipantViewId);
 
             previousParticipantViewId = participantView.getId();
@@ -246,27 +273,40 @@ public class ItemsActivity extends AppCompatActivity {
     }
 
     private TextView getParticipantListElementView(String currentParticipant) {
-        String participantText = currentParticipant;
+        TextView participantView = new TextView(this);
 
-        // select debts for other participants
+        String text = getDebtsToOtherParticipants(currentParticipant);
+
+        participantView.setText(text);
+        layoutParticipants.addView(participantView);
+        participantView.setId(View.generateViewId());
+
+        int minHeight = helper.getPixelsFromDps(PARTICIPANT_LIST_ELEMENT_MINIMAL_HEIGHT);
+        float textSize = (float) helper.getPixelsFromDps(FONT_SIZE_NORMAL);
+        participantView.setMinHeight(minHeight);
+        participantView.setBackgroundResource(R.drawable.list_item_border);
+        participantView.setTextSize(textSize);
+        participantView.setGravity(Gravity.CENTER_VERTICAL);
+
+        return participantView;
+    }
+
+    private String getDebtsToOtherParticipants(String currentParticipant)
+    {
+        String text = currentParticipant;
+
         for (int j = 0; j < participants.length; j++) {
             if (currentParticipant.equals(participants[j])) {
                 continue;
             }
 
-            participantText += getPersonalDebt(currentParticipant, participants[j]);
+            text += getPersonalDebtString(currentParticipant, participants[j]);
         }
 
-        TextView participantView = new TextView(this);
-
-        participantView.setText(participantText);
-        layoutParticipants.addView(participantView);
-        participantView.setId(View.generateViewId());
-
-        return participantView;
+        return text;
     }
 
-    private String getPersonalDebt(String firstParticipant, String secondParticipant)
+    private String getPersonalDebtString(String firstParticipant, String secondParticipant)
     {
         String text = "";
 
@@ -284,12 +324,6 @@ public class ItemsActivity extends AppCompatActivity {
     }
 
     private void placeParticipantViewOnList(TextView participantView, int previousParticipantViewId) {
-        if (previousParticipantViewId == 0) {
-            setParticipants.connect(participantView.getId(), ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP, 40);
-        } else {
-            setParticipants.connect(participantView.getId(), ConstraintSet.TOP, previousParticipantViewId, ConstraintSet.BOTTOM, 40);
-        }
-        setParticipants.connect(participantView.getId(), ConstraintSet.LEFT, ConstraintSet.PARENT_ID, ConstraintSet.LEFT, 40);
-        setParticipants.applyTo(layoutParticipants);
+        // STUB
     }
 }
