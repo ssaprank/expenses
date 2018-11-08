@@ -35,20 +35,23 @@ import java.util.Locale;
 public class ItemsActivity extends AppCompatActivity {
 
     ExpensesDatabase db;
-    ConstraintLayout layoutItems;
+    LinearLayout layoutItems;
     LinearLayout layoutParticipants;
-    ConstraintSet setItems;
     String[] participants;
     long windowID;
     long currentItemId;
     double totalSpent;
     Helper helper;
     TabHost tabHost;
+    int textViewsLeftMargin;
 
     final int PARTICIPANT_LIST_ELEMENT_MINIMAL_HEIGHT = 100;
-    final int PARTICIPANT_LIST_ELEMENT_LEFT_PADDING = 10;
-    final int ADD_BUTTON_DIMENSION = 65;
+    final int ADD_BUTTON_DIMENSION = 45;
+    final int DELETE_BUTTON_DIMENSION = 35;
     final int FONT_SIZE_NORMAL = 10;
+    final int FONT_SIZE_TOTALS = 8;
+    final int ITEMS_LAYOUT_SCROLL_LEFT_MARGIN = 8;
+    final int ITEM_TEXT_LEFT_MARGIN = 8;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,20 +61,11 @@ public class ItemsActivity extends AppCompatActivity {
 
         Cursor itemCursor = db.item().selectByWindowId(windowID);
 
-        int previousItemViewId = 0;
-
         while (itemCursor.moveToNext()) {
             currentItemId = itemCursor.getLong(itemCursor.getColumnIndex("id"));
 
-            TextView itemTextView = getItemTextView(itemCursor);
+            addItemConstraintLayout(itemCursor);
             increaseTotalSum(itemCursor);
-            ImageButton deleteItemButton = addDeletionButtonForItem();
-            setItems.clone(layoutItems);
-
-            placeListElementOnLayout(itemTextView, previousItemViewId, ConstraintSet.LEFT);
-            placeListElementOnLayout(deleteItemButton, previousItemViewId, ConstraintSet.RIGHT);
-
-            previousItemViewId = itemTextView.getId();
         }
 
         itemCursor.close();
@@ -86,6 +80,37 @@ public class ItemsActivity extends AppCompatActivity {
         setAddParticipantsButton();
     }
 
+    private void addItemConstraintLayout(Cursor itemCursor) {
+        TextView itemTextView = getItemTextView(itemCursor);
+        ImageButton deleteItemButton = getDeletionButtonForItem();
+
+        ConstraintLayout layout = new ConstraintLayout(this);
+        layout.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        layout.addView(itemTextView);
+        layout.addView(deleteItemButton);
+
+        int minHeight = helper.getPixelsFromDps(PARTICIPANT_LIST_ELEMENT_MINIMAL_HEIGHT);
+        float textSize = (float) helper.getPixelsFromDps(FONT_SIZE_NORMAL);
+        layout.setMinHeight(minHeight);
+        layout.setBackgroundResource(R.drawable.list_item_border);
+        itemTextView.setTextSize(textSize);
+
+        ConstraintSet set = new ConstraintSet();
+        set.clone(layout);
+
+        set.connect(itemTextView.getId(), ConstraintSet.LEFT, ConstraintSet.PARENT_ID, ConstraintSet.LEFT, textViewsLeftMargin);
+        set.connect(itemTextView.getId(), ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP);
+        set.connect(itemTextView.getId(), ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM);
+        set.applyTo(layout);
+
+        set.connect(deleteItemButton.getId(), ConstraintSet.RIGHT, ConstraintSet.PARENT_ID, ConstraintSet.RIGHT, 20);
+        set.connect(deleteItemButton.getId(), ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP);
+        set.connect(deleteItemButton.getId(), ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM);
+        set.applyTo(layout);
+
+        layoutItems.addView(layout);
+    }
+
     private void initializeActivity()
     {
         Intent intent = getIntent();
@@ -96,7 +121,6 @@ public class ItemsActivity extends AppCompatActivity {
     private void initializeFields(Intent intent)
     {
         db = ExpensesDatabase.getInstance(this);
-        setItems = new ConstraintSet();
         layoutItems = findViewById(R.id.layout_item_list);
         layoutParticipants = findViewById(R.id.layout_participants_list);
         windowID = intent.getLongExtra("window_id", 0);
@@ -113,15 +137,17 @@ public class ItemsActivity extends AppCompatActivity {
         helper = new Helper(displayDensity);
         tabHost = findViewById(R.id.tabHost);
         tabHost.setup();
+
+        textViewsLeftMargin = helper.getPixelsFromDps(ITEM_TEXT_LEFT_MARGIN);
     }
 
     private void setUpTabs()
     {
-        TabHost.TabSpec specs = getTabSpecForTitle("Expenses", R.id.tab_layout_items);
+        TabHost.TabSpec specs = getTabSpecForTitle(getResources().getString(R.string.items_activity_tab_expenses_title), R.id.tab_layout_items);
 
         tabHost.addTab(specs);
 
-        specs = getTabSpecForTitle("Participants", R.id.tab_layout_participants);
+        specs = getTabSpecForTitle(getResources().getString(R.string.items_activity_tab_participants_title), R.id.tab_layout_participants);
         tabHost.addTab(specs);
     }
 
@@ -144,22 +170,20 @@ public class ItemsActivity extends AppCompatActivity {
         String description = cursor.getString(cursor.getColumnIndex("description"));
         double sum = cursor.getDouble(cursor.getColumnIndex("sum"));
 
-        String itemText = String.format("%s\nSum:%s\n", description, Double.toString(sum));
+        String itemText = String.format("%s\nSum:%s", description, Double.toString(sum));
 
         itemTextView.setText(itemText);
-        layoutItems.addView(itemTextView);
         itemTextView.setId(View.generateViewId());
 
         return itemTextView;
     }
-
 
     private void increaseTotalSum(Cursor cursor) {
         double sum = cursor.getDouble(cursor.getColumnIndex("sum"));
         totalSpent += sum;
     }
 
-    private ImageButton addDeletionButtonForItem() {
+    private ImageButton getDeletionButtonForItem() {
         ImageButton deleteItemButton = new ImageButton(this);
         deleteItemButton.setBackground(this.getResources().getDrawable(R.drawable.delete_button));
         deleteItemButton.setOnClickListener(new View.OnClickListener(){
@@ -176,40 +200,47 @@ public class ItemsActivity extends AppCompatActivity {
             }
         });
 
-        layoutItems.addView(deleteItemButton);
+        int dimensionPixels = helper.getPixelsFromDps(DELETE_BUTTON_DIMENSION);
+
+        ViewGroup.LayoutParams lp = new ViewGroup.MarginLayoutParams(dimensionPixels, dimensionPixels);
+        deleteItemButton.setLayoutParams(lp);
+
         deleteItemButton.setId(View.generateViewId());
-
+        deleteItemButton.setPadding(0,30,0,0);
         return deleteItemButton;
-    }
-
-    private void placeListElementOnLayout(View view, int previousElementId, int horizontalAlign) {
-        if (previousElementId == 0) {
-            setItems.connect(view.getId(), ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP, 40);
-        } else {
-            setItems.connect(view.getId(), ConstraintSet.TOP, previousElementId, ConstraintSet.BOTTOM, 20);
-        }
-        setItems.connect(view.getId(), horizontalAlign, ConstraintSet.PARENT_ID, horizontalAlign, 80);
-
-        setItems.applyTo(layoutItems);
     }
 
     private void setTotalsText()
     {
-        String text = String.format(Locale.getDefault(), "Total sum: %.2f", totalSpent);
+        String text = String.format(Locale.getDefault(), getResources().getString(R.string.items_activity_total_sum) + ": %.2f", totalSpent);
 
         double plannedSum = db.window().selectPlannedSumByWindowsId(windowID);
 
         if (plannedSum > 0) {
-            text += String.format(Locale.getDefault(), "\nPlanned sum: %.2f", plannedSum);
-            text += String.format(Locale.getDefault(), "\nRemaining money to spend: %.2f", (plannedSum - totalSpent));
+            text += String.format(Locale.getDefault(), "\n" + getResources().getString(R.string.items_activity_planned_sum) +": %.2f", plannedSum);
+            text += String.format(Locale.getDefault(), "\n" + getResources().getString(R.string.items_activity_remained_sum) + ": %.2f", (plannedSum - totalSpent));
         }
 
         TextView totalSumTextView = findViewById(R.id.totals_item_text_view);
+        int fontSize = helper.getPixelsFromDps(FONT_SIZE_TOTALS);
+        totalSumTextView.setTextSize(fontSize);
+
         totalSumTextView.setText(text);
     }
 
     private void setAddItemButton() {
-        ImageButton addItemButton = findViewById(R.id.addItemButton);
+        ImageButton addItemButton = new ImageButton(this);
+        LinearLayout imageLayout = new LinearLayout(this);
+        int minHeight = helper.getPixelsFromDps(PARTICIPANT_LIST_ELEMENT_MINIMAL_HEIGHT);
+        imageLayout.setMinimumHeight(minHeight);
+        imageLayout.setGravity(Gravity.CENTER_VERTICAL);
+
+        imageLayout.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                AddItemDialogFragment dialog = new AddItemDialogFragment();
+                setAddButtonListener(dialog);
+            }
+        });
 
         addItemButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -217,6 +248,16 @@ public class ItemsActivity extends AppCompatActivity {
                 setAddButtonListener(dialog);
             }
         });
+
+        int dimensionPixels = helper.getPixelsFromDps(ADD_BUTTON_DIMENSION);
+
+        imageLayout.setBackgroundResource(R.drawable.list_item_border);
+        addItemButton.setBackgroundResource(R.drawable.add_button);
+        ViewGroup.MarginLayoutParams lp = new ViewGroup.MarginLayoutParams(dimensionPixels, dimensionPixels);
+        lp.setMargins(textViewsLeftMargin,0,0,0);
+        addItemButton.setLayoutParams(lp);
+        imageLayout.addView(addItemButton);
+        layoutItems.addView(imageLayout);
     }
 
     private void setAddParticipantsButton() {
@@ -224,6 +265,13 @@ public class ItemsActivity extends AppCompatActivity {
         LinearLayout imageLayout = new LinearLayout(this);
 
         imageLayout.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                AddParticipantDialogFragment dialog = new AddParticipantDialogFragment();
+                setAddButtonListener(dialog);
+            }
+        });
+
+        addParticipantButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 AddParticipantDialogFragment dialog = new AddParticipantDialogFragment();
                 setAddButtonListener(dialog);
@@ -317,7 +365,9 @@ public class ItemsActivity extends AppCompatActivity {
         double debt = ownDebt - ownedDebt;
 
         if (debt > 0) {
-            text = String.format(Locale.getDefault(), "\nOwns: %.2f to %s\n", debt, secondParticipant);
+            String text1 = getResources().getString(R.string.items_activity_participant_debt_text1);
+            String text2 = getResources().getString(R.string.items_activity_participant_debt_text2);
+            text = String.format(Locale.getDefault(), "\n%s %.2f %s %s", text1, debt, text2, secondParticipant);
         }
 
         return text;

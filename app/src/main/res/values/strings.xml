@@ -1,13 +1,26 @@
 <resources>
-    <string name="app_name">Expenses</string>
-    <string name="add_window_button_description">Add New Window</string>
-    <string name="add_item_button_description">Add New Item</string>
-    <string name="person_button_description">Manage persons</string>
-    <string name="planned_sum">(optional) total money limit</string>
-    <string name="window_name">Provide name for this window</string>
-    <string name="cancel_adding_window">Cancel</string>
-    <string name="confirm_adding_window">Submit</string>
-    <string name="item_sum">Money amount</string>
-    <string name="item_description">Provide an item description</string>
-    <string name="item_sign">Check if it was a gain?</string>
+    <string name="app_name">Менеджер расходов</string>
+    <string name="add_window_button_description">Добавить новое окно</string>
+    <string name="add_item_button_description">Добавить новую статью расходов</string>
+    <string name="person_button_description">Добавить участника</string>
+    <string name="planned_sum">Лимит (опционально)</string>
+    <string name="window_name">Имя окна</string>
+    <string name="cancel_adding_window">Отмена</string>
+    <string name="confirm_adding_window">Принять</string>
+    <string name="item_sum">Сумма</string>
+    <string name="item_description">Описание статьи расходов</string>
+    <string name="participants_title">Управление участниками</string>
+    <string name="items_title">Управление расходами</string>
+    <string name="dialog_add_item_spinner_label">Оплатил:</string>
+    <string name="dialog_add_item_checkbox_area_label">Воспользовались:</string>
+
+    <string name="items_activity_total_sum">Общая сумма</string>
+    <string name="items_activity_planned_sum">Запланировано потратить</string>
+    <string name="items_activity_remained_sum">Осталось потратить</string>
+
+    <string name="items_activity_tab_expenses_title">Расходы</string>
+    <string name="items_activity_tab_participants_title">Участники</string>
+
+    <string name="items_activity_participant_debt_text1">Должен</string>
+    <string name="items_activity_participant_debt_text2">участнику</string>
 </resources>

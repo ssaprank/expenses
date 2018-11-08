@@ -99,7 +99,7 @@ public class AddItemDialogFragment extends AddingDialogFragment {
 
     private void fillSpinnerWithParticipants() {
         ArrayAdapter<String> adapter = new ArrayAdapter<>(activity, android.R.layout.simple_spinner_item, participants);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        adapter.setDropDownViewResource(R.layout.additem_dialog_spinner);
         itemOwnerSpinner.setAdapter(adapter);
     }
 
@@ -113,10 +113,11 @@ public class AddItemDialogFragment extends AddingDialogFragment {
     }
 
     private CheckBox getParticipantCheckbox(String participant) {
-        CheckBox participantCheckbox = new CheckBox(getActivity());
+        CheckBox participantCheckbox = new CheckBox(activity);
         participantCheckbox.setChecked(true);
         participantCheckbox.setText(participant);
         participantCheckbox.setId(View.generateViewId());
+        participantCheckbox.setTextSize(24);
         participantCheckbox.setTag("participant_checkbox_" + participant);
         return participantCheckbox;
     }
