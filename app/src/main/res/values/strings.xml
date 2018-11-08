@@ -11,6 +11,7 @@
     <string name="item_description">Описание статьи расходов</string>
     <string name="participants_title">Управление участниками</string>
     <string name="items_title">Управление расходами</string>
+    <string name="windows_title">Управление окнами</string>
     <string name="dialog_add_item_spinner_label">Оплатил:</string>
     <string name="dialog_add_item_checkbox_area_label">Воспользовались:</string>
 

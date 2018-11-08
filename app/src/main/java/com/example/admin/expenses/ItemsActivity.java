@@ -8,6 +8,7 @@ import android.support.constraint.ConstraintSet;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Layout;
 import android.text.TextUtils;
@@ -50,13 +51,13 @@ public class ItemsActivity extends AppCompatActivity {
     final int DELETE_BUTTON_DIMENSION = 35;
     final int FONT_SIZE_NORMAL = 10;
     final int FONT_SIZE_TOTALS = 8;
-    final int ITEMS_LAYOUT_SCROLL_LEFT_MARGIN = 8;
     final int ITEM_TEXT_LEFT_MARGIN = 8;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         initializeActivity();
+        setActionBar();
         setUpTabs();
 
         Cursor itemCursor = db.item().selectByWindowId(windowID);
@@ -375,5 +376,14 @@ public class ItemsActivity extends AppCompatActivity {
 
     private void placeParticipantViewOnList(TextView participantView, int previousParticipantViewId) {
         // STUB
+    }
+
+    public void setActionBar() {
+        ActionBar actionBar = getSupportActionBar();
+        actionBar.setHomeButtonEnabled(true);
+        actionBar.setDisplayHomeAsUpEnabled(false);
+        actionBar.setDisplayShowHomeEnabled(false);
+        actionBar.setTitle(getResources().getString(R.string.items_title));
+        actionBar.show();
     }
 }

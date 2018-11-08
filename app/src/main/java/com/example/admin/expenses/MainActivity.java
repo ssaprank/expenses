@@ -9,21 +9,31 @@ import android.support.constraint.ConstraintSet;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.example.admin.expenses.data.*;
+import com.example.admin.expenses.fragments.AddItemDialogFragment;
 import com.example.admin.expenses.fragments.AddWindowDialogFragment;
+import com.example.admin.expenses.helpers.Helper;
 
 import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
     ExpensesDatabase db;
-    ConstraintLayout layoutMain;
+    LinearLayout layoutMain;
     long currentWindowId;
     ConstraintSet set;
+    Helper helper;
+
+    final int LIST_ELEMENT_MINIMAL_HEIGHT = 100;
+    final int FONT_SIZE_NORMAL = 10;
+    final int ADD_BUTTON_DIMENSION = 45;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,47 +42,83 @@ public class MainActivity extends AppCompatActivity {
         db = ExpensesDatabase.getInstance(this);
         layoutMain = findViewById(R.id.layout_window_list);
         set = new ConstraintSet();
+        helper = new Helper(getResources().getDisplayMetrics().density);
 
-        setActionBar("Manage your expenses");
+        setActionBar();
 
         Cursor windowsCursor = db.window().selectAll();
-        int previousWindowViewId = 0;
 
         while (windowsCursor.moveToNext()) {
-            TextView windowView = addWindowView(windowsCursor);
-            ImageButton deleteWindowButton = addDeletionButtonForWindow();
-
-            set.clone(layoutMain);
-
-            placeViewOnLayout(windowView, previousWindowViewId, ConstraintSet.LEFT);
-            placeViewOnLayout(deleteWindowButton, previousWindowViewId, ConstraintSet.RIGHT);
-
-            previousWindowViewId = windowView.getId();
+            addWindowLayout(windowsCursor);
         }
 
         windowsCursor.close();
 
-        ImageButton addWindowButton = findViewById(R.id.addWindowButton);
+        setAddWindowButton();
+    }
+
+    private void addWindowLayout(Cursor cursor) {
+        TextView windowView = getWindowView(cursor);
+        ImageButton deleteWindowButton = getDeletionButtonForWindow();
+
+        ConstraintLayout layout = new ConstraintLayout(this);
+        layout.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        layout.addView(windowView);
+        layout.addView(deleteWindowButton);
+
+        int minHeight = helper.getPixelsFromDps(LIST_ELEMENT_MINIMAL_HEIGHT);
+        float textSize = (float) helper.getPixelsFromDps(FONT_SIZE_NORMAL);
+        layout.setMinHeight(minHeight);
+        layout.setBackgroundResource(R.drawable.list_item_border);
+        windowView.setTextSize(textSize);
+
+        ConstraintSet set = new ConstraintSet();
+        set.clone(layout);
+
+        set.connect(windowView.getId(), ConstraintSet.LEFT, ConstraintSet.PARENT_ID, ConstraintSet.LEFT, 20);
+        set.connect(windowView.getId(), ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP);
+        set.connect(windowView.getId(), ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM);
+        set.applyTo(layout);
+
+        set.connect(deleteWindowButton.getId(), ConstraintSet.RIGHT, ConstraintSet.PARENT_ID, ConstraintSet.RIGHT, 20);
+        set.connect(deleteWindowButton.getId(), ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP);
+        set.connect(deleteWindowButton.getId(), ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM);
+        set.applyTo(layout);
+
+        layoutMain.addView(layout);
+    }
+
+    private void setAddWindowButton() {
+        ImageButton addWindowButton = new ImageButton(this);
+        LinearLayout imageLayout = new LinearLayout(this);
+        int minHeight = helper.getPixelsFromDps(LIST_ELEMENT_MINIMAL_HEIGHT);
+        imageLayout.setMinimumHeight(minHeight);
+        imageLayout.setGravity(Gravity.CENTER_VERTICAL);
+
+        imageLayout.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                openAddWindowDialog();
+            }
+        });
 
         addWindowButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 openAddWindowDialog();
             }
         });
+
+        int dimensionPixels = helper.getPixelsFromDps(ADD_BUTTON_DIMENSION);
+
+        imageLayout.setBackgroundResource(R.drawable.list_item_border);
+        addWindowButton.setBackgroundResource(R.drawable.add_button);
+        ViewGroup.MarginLayoutParams lp = new ViewGroup.MarginLayoutParams(dimensionPixels, dimensionPixels);
+        lp.setMargins(24,0,0,0);
+        addWindowButton.setLayoutParams(lp);
+        imageLayout.addView(addWindowButton);
+        layoutMain.addView(imageLayout);
     }
 
-    private void placeViewOnLayout(View view, int previousElementId, int horizontalAlign) {
-        if (previousElementId == 0) {
-            set.connect(view.getId(), ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP, 40);
-        } else {
-            set.connect(view.getId(), ConstraintSet.TOP, previousElementId, ConstraintSet.BOTTOM, 20);
-        }
-        set.connect(view.getId(), horizontalAlign, ConstraintSet.PARENT_ID, horizontalAlign, 80);
-
-        set.applyTo(layoutMain);
-    }
-
-    private TextView addWindowView(Cursor cursor) {
+    private TextView getWindowView(Cursor cursor) {
         currentWindowId = cursor.getLong(cursor.getColumnIndex("id"));
         String name = cursor.getString(cursor.getColumnIndex("name"));
         double plannedSum = 0;
@@ -99,12 +145,12 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        addViewToLayout(windowTextView);
+        windowTextView.setId(View.generateViewId());
 
         return windowTextView;
     }
 
-    private ImageButton addDeletionButtonForWindow() {
+    private ImageButton getDeletionButtonForWindow() {
         ImageButton button = new ImageButton(this);
         button.setBackground(this.getResources().getDrawable(R.drawable.delete_button));
         button.setOnClickListener(new View.OnClickListener(){
@@ -121,14 +167,9 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        addViewToLayout(button);
+        button.setId(View.generateViewId());
 
         return button;
-    }
-
-    private void addViewToLayout(View view) {
-        layoutMain.addView(view);
-        view.setId(View.generateViewId());
     }
 
     private void openAddWindowDialog() {
@@ -154,12 +195,12 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    public void setActionBar(String heading) {
+    public void setActionBar() {
         ActionBar actionBar = getSupportActionBar();
         actionBar.setHomeButtonEnabled(true);
         actionBar.setDisplayHomeAsUpEnabled(false);
         actionBar.setDisplayShowHomeEnabled(false);
-        actionBar.setTitle(heading);
+        actionBar.setTitle(getResources().getString(R.string.windows_title));
         actionBar.show();
     }
 
