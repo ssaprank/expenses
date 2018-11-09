@@ -17,4 +17,10 @@ public abstract class DebtDao implements BaseDao<Debt> {
 
     @Query("DELETE FROM " + Debt.TABLE_NAME + " WHERE owner = :owner AND debtor = :debtor AND window_id = :windowId")
     public abstract int delete(String owner, String debtor, long windowId);
+
+    @Query("DELETE FROM " + Debt.TABLE_NAME + " WHERE item_id = :itemID")
+    public abstract int deleteByItemId(long itemID);
+
+    @Query("DELETE FROM " + Debt.TABLE_NAME + " WHERE window_id = :windowID")
+    public abstract int deleteByWindowId(long windowID);
 }

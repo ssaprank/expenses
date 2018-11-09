@@ -15,17 +15,18 @@ public class AddingDialogFragment extends DialogFragment {
     protected View dialogView;
     protected ExpensesDatabase db;
 
-    protected void insertEntity(BaseEntity entity) {
+    protected long insertEntity(BaseEntity entity) {
+        long itemID = 0;
         try {
             db.beginTransaction();
-            db.getDaoObjectForEntity(entity).insert(entity);
+            itemID = db.getDaoObjectForEntity(entity).insert(entity);
             db.setTransactionSuccessful();
         } catch (Exception e) {
             Log.d("DATABASE", "Exception was thrown while inserting new " + entity.getClass());
             Log.d("DATABASE", e.getMessage());
         } finally {
             db.endTransaction();
-            closeDialogAndRestartActivity();
+            return itemID;
         }
     }
 

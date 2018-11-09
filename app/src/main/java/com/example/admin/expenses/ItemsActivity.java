@@ -40,7 +40,6 @@ public class ItemsActivity extends AppCompatActivity {
     LinearLayout layoutParticipants;
     String[] participants;
     long windowID;
-    long currentItemId;
     double totalSpent;
     Helper helper;
     TabHost tabHost;
@@ -63,8 +62,6 @@ public class ItemsActivity extends AppCompatActivity {
         Cursor itemCursor = db.item().selectByWindowId(windowID);
 
         while (itemCursor.moveToNext()) {
-            currentItemId = itemCursor.getLong(itemCursor.getColumnIndex("id"));
-
             addItemConstraintLayout(itemCursor);
             increaseTotalSum(itemCursor);
         }
@@ -82,8 +79,10 @@ public class ItemsActivity extends AppCompatActivity {
     }
 
     private void addItemConstraintLayout(Cursor itemCursor) {
+        long itemId = itemCursor.getLong(itemCursor.getColumnIndex("id"));
+
         TextView itemTextView = getItemTextView(itemCursor);
-        ImageButton deleteItemButton = getDeletionButtonForItem();
+        ImageButton deleteItemButton = getDeletionButtonForItem(itemId);
 
         ConstraintLayout layout = new ConstraintLayout(this);
         layout.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -184,14 +183,25 @@ public class ItemsActivity extends AppCompatActivity {
         totalSpent += sum;
     }
 
-    private ImageButton getDeletionButtonForItem() {
+    private ImageButton getDeletionButtonForItem(long itemId) {
+        final long currentItemID = itemId;
         ImageButton deleteItemButton = new ImageButton(this);
         deleteItemButton.setBackground(this.getResources().getDrawable(R.drawable.delete_button));
         deleteItemButton.setOnClickListener(new View.OnClickListener(){
             public void onClick(View v) {
                 try {
                     db.beginTransaction();
-                    db.item().deleteById(currentItemId);
+                    db.item().deleteById(currentItemID);
+                    db.setTransactionSuccessful();
+                } catch (Exception e) {} finally {
+                    db.endTransaction();
+                    finish();
+                    startActivity(getIntent());
+                }
+
+                try {
+                    db.beginTransaction();
+                    db.debt().deleteByItemId(currentItemID);
                     db.setTransactionSuccessful();
                 } catch (Exception e) {} finally {
                     db.endTransaction();
@@ -278,6 +288,10 @@ public class ItemsActivity extends AppCompatActivity {
                 setAddButtonListener(dialog);
             }
         });
+
+        int minHeight = helper.getPixelsFromDps(PARTICIPANT_LIST_ELEMENT_MINIMAL_HEIGHT);
+        imageLayout.setMinimumHeight(minHeight);
+        imageLayout.setGravity(Gravity.CENTER_VERTICAL);
 
         int dimensionPixels = helper.getPixelsFromDps(ADD_BUTTON_DIMENSION);
 

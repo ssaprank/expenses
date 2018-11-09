@@ -40,6 +40,7 @@ public class AddWindowDialogFragment extends AddingDialogFragment {
             public void onClick(DialogInterface dialog, int id) {
             Window window = getWindowObjectFromViews();
             insertEntity(window);
+            closeDialogAndRestartActivity();
             }
         });
 

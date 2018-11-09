@@ -23,7 +23,12 @@ public class Debt extends BaseEntity{
     public double amount;
 
     @NonNull
+    @ColumnInfo(name = "item_id")
+    @ForeignKey(entity = Item.class, parentColumns = {"id"}, childColumns = {"itemID"}, onDelete = ForeignKey.CASCADE)
+    public long itemID;
+
+    @NonNull
     @ColumnInfo(name = "window_id")
     @ForeignKey(entity = Window.class, parentColumns = {"id"}, childColumns = {"windowID"}, onDelete = ForeignKey.CASCADE)
-    public double windowID;
+    public long windowID;
 }

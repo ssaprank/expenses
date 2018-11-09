@@ -65,20 +65,30 @@ public class AddItemDialogFragment extends AddingDialogFragment {
 
         if (participantsArg == null || windowID == 0) {
             logErrorAndQuit("Activity arguments are incomplete or missing.");
-        } else {
+        }
+
+        if (participantsArg.split(",").length > 1) {
+            participants = participantsArg.split(",");
             createViewsForParticipants(participantsArg);
+        } else {
+            participants = new String[0];
+            LinearLayout participantViewGroup = dialogView.findViewById(R.id.item_participant_views);
+            participantViewGroup.setVisibility(View.GONE);
         }
 
         builder.setPositiveButton(R.string.confirm_adding_window, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int id) {
                 Item item = getItemFromDialogForm();
+                long itemID = insertEntity(item);
 
-                if (item.sum > 0 && participants.length > 0) {
+                item.id = itemID;
+
+                if (item.sum > 0 && participants.length > 1) {
                     calculateAndInsertEqualShare(item);
                 }
 
-                insertEntity(item);
+                closeDialogAndRestartActivity();
             }
         });
 
@@ -92,7 +102,6 @@ public class AddItemDialogFragment extends AddingDialogFragment {
     }
 
     private void createViewsForParticipants(String participantsArg) {
-        participants = participantsArg.split(",");
         fillSpinnerWithParticipants();
         createCheckboxesForParticipants();
     }
@@ -141,7 +150,7 @@ public class AddItemDialogFragment extends AddingDialogFragment {
         if (sharingParticipants.size() > 0) {
             double equalShare = item.sum / sharingParticipants.size();
 
-            insertDebtsForSharingParticipants(sharingParticipants, equalShare);
+            insertDebtsForSharingParticipants(item.id, sharingParticipants, equalShare);
         }
     }
 
@@ -167,20 +176,21 @@ public class AddItemDialogFragment extends AddingDialogFragment {
         return itemOwnerSpinner.getSelectedItem().toString();
     }
 
-    private void insertDebtsForSharingParticipants(ArrayList<String> sharingParticipants, double equalShare) {
+    private void insertDebtsForSharingParticipants(long itemID, ArrayList<String> sharingParticipants, double equalShare) {
         String debtOwner = getItemOwner();
 
         for (int i = 0; i < sharingParticipants.size(); i++) {
-            Debt debt = createDebt(equalShare, debtOwner, sharingParticipants.get(i));
+            Debt debt = createDebt(itemID, equalShare, debtOwner, sharingParticipants.get(i));
             insertEntity(debt);
         }
     }
 
-    private Debt createDebt(double sum, String owner, String debtor) {
+    private Debt createDebt(long itemID, double sum, String owner, String debtor) {
         Debt debt = new Debt();
         debt.amount = sum;
         debt.owner = owner;
         debt.debtor = debtor;
+        debt.itemID = itemID;
         debt.windowID = windowID;
         return debt;
     }

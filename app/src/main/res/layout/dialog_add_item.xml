@@ -30,48 +30,53 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="8dp"
-        android:layout_marginStart="8dp"
-        android:orientation="horizontal">
-        <TextView
-            android:layout_width="wrap_content"
+        android:orientation="vertical"
+        android:id="@+id/item_participant_views">
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
             android:layout_marginStart="8dp"
-            android:textSize="24sp"
-            android:text="@string/dialog_add_item_spinner_label"/>
-        <Spinner
-            android:id="@+id/item_owner"
+            android:orientation="horizontal">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_marginStart="8dp"
+                android:textSize="24sp"
+                android:text="@string/dialog_add_item_spinner_label"/>
+            <Spinner
+                android:id="@+id/item_owner"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"/>
+        </LinearLayout>
+
+        <View
             android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
+            android:layout_marginEnd="16dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:layout_height="2dp"
+            android:background="#888888"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:layout_marginStart="16dp"
+            android:textSize="24sp"
+            android:text="@string/dialog_add_item_checkbox_area_label"/>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="8dp"
+            android:id="@+id/participant_checkbox_layout"
+            android:orientation="vertical">
+        </LinearLayout>
+
     </LinearLayout>
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_marginEnd="16dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"
-        android:layout_height="2dp"
-        android:background="#888888"/>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="16dp"
-        android:layout_marginStart="16dp"
-        android:textSize="24sp"
-        android:text="@string/dialog_add_item_checkbox_area_label"/>
-
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="16dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="8dp"
-        android:id="@+id/participant_checkbox_layout"
-        android:orientation="vertical">
-    </LinearLayout>
-
-
 </LinearLayout>

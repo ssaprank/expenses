@@ -27,7 +27,6 @@ public class MainActivity extends AppCompatActivity {
 
     ExpensesDatabase db;
     LinearLayout layoutMain;
-    long currentWindowId;
     ConstraintSet set;
     Helper helper;
 
@@ -59,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void addWindowLayout(Cursor cursor) {
         TextView windowView = getWindowView(cursor);
-        ImageButton deleteWindowButton = getDeletionButtonForWindow();
+        ImageButton deleteWindowButton = getDeletionButtonForWindow(cursor);
 
         ConstraintLayout layout = new ConstraintLayout(this);
         layout.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -119,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private TextView getWindowView(Cursor cursor) {
-        currentWindowId = cursor.getLong(cursor.getColumnIndex("id"));
+        final long windowID = cursor.getLong(cursor.getColumnIndex("id"));
         String name = cursor.getString(cursor.getColumnIndex("name"));
         double plannedSum = 0;
 
@@ -141,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
 
         windowTextView.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                openItemsActivity(currentWindowId);
+                openItemsActivity(windowID);
             }
         });
 
@@ -150,14 +149,25 @@ public class MainActivity extends AppCompatActivity {
         return windowTextView;
     }
 
-    private ImageButton getDeletionButtonForWindow() {
+    private ImageButton getDeletionButtonForWindow(Cursor cursor) {
+        final long windowID = cursor.getLong(cursor.getColumnIndex("id"));
         ImageButton button = new ImageButton(this);
         button.setBackground(this.getResources().getDrawable(R.drawable.delete_button));
         button.setOnClickListener(new View.OnClickListener(){
             public void onClick(View v) {
                 try {
                     db.beginTransaction();
-                    db.window().deleteById(currentWindowId);
+                    db.window().deleteById(windowID);
+                    db.setTransactionSuccessful();
+                } catch (Exception e) {} finally {
+                    db.endTransaction();
+                    finish();
+                    startActivity(getIntent());
+                }
+
+                try {
+                    db.beginTransaction();
+                    db.debt().deleteByWindowId(windowID);
                     db.setTransactionSuccessful();
                 } catch (Exception e) {} finally {
                     db.endTransaction();
