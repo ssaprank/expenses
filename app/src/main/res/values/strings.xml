@@ -10,7 +10,7 @@
     <string name="item_sum">Сумма</string>
     <string name="item_description">Описание статьи расходов</string>
     <string name="participant_edittext_hint">Введите имя нового участника</string>
-    <string name="participants_title">Управление участниками</string>
+    <string name="participants_title">Добавление участников</string>
     <string name="items_title">Управление расходами</string>
     <string name="windows_title">Управление окнами</string>
     <string name="dialog_add_item_spinner_label">Оплатил:</string>

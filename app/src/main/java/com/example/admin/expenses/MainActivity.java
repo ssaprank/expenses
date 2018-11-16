@@ -31,7 +31,7 @@ public class MainActivity extends AppCompatActivity {
     Helper helper;
 
     final int LIST_ELEMENT_MINIMAL_HEIGHT = 100;
-    final int FONT_SIZE_NORMAL = 10;
+    final int FONT_SIZE_NORMAL = 8;
     final int ADD_BUTTON_DIMENSION = 45;
 
     @Override
@@ -158,6 +158,16 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     db.beginTransaction();
                     db.window().deleteById(windowID);
+                    db.setTransactionSuccessful();
+                } catch (Exception e) {} finally {
+                    db.endTransaction();
+                    finish();
+                    startActivity(getIntent());
+                }
+
+                try {
+                    db.beginTransaction();
+                    db.item().deleteByWindowId(windowID);
                     db.setTransactionSuccessful();
                 } catch (Exception e) {} finally {
                     db.endTransaction();

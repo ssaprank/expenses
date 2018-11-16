@@ -48,8 +48,8 @@ public class ItemsActivity extends AppCompatActivity {
     final int PARTICIPANT_LIST_ELEMENT_MINIMAL_HEIGHT = 100;
     final int ADD_BUTTON_DIMENSION = 45;
     final int DELETE_BUTTON_DIMENSION = 35;
-    final int FONT_SIZE_NORMAL = 10;
-    final int FONT_SIZE_TOTALS = 8;
+    final int FONT_SIZE_NORMAL = 8;
+    final int FONT_SIZE_TOTALS = 6;
     final int ITEM_TEXT_LEFT_MARGIN = 8;
 
     @Override

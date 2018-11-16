@@ -17,4 +17,7 @@ public abstract class ItemDao implements BaseDao<Item> {
 
     @Query("DELETE FROM " + Item.TABLE_NAME + " WHERE id = :id")
     public abstract int deleteById(long id);
+
+    @Query("DELETE FROM " + Item.TABLE_NAME + " WHERE window_id = :id")
+    public abstract int deleteByWindowId(long id);
 }
