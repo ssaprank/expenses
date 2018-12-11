@@ -10,7 +10,13 @@ import android.support.annotation.VisibleForTesting;
 /**
  * The Room database.
  */
-@Database(entities = {BaseEntity.class, Window.class, Item.class, Debt.class}, version = 7, exportSchema = false)
+@Database(entities = {
+        BaseEntity.class,
+        Window.class,
+        Window.ChildParent.class,
+        Item.class,
+        Debt.class
+}, version = 8, exportSchema = false)
 public abstract class ExpensesDatabase extends RoomDatabase {
 
     /**
@@ -18,6 +24,12 @@ public abstract class ExpensesDatabase extends RoomDatabase {
      */
     @SuppressWarnings("WeakerAccess")
     public abstract WindowDao window();
+
+    /**
+     * @return The DAO for the Window.ChildParent relation.
+     */
+    @SuppressWarnings("WeakerAccess")
+    public abstract WindowChildParentDao windowChildParent();
 
     /**
      * @return The DAO for the Item table.

@@ -2,6 +2,7 @@ package com.example.admin.expenses;
 
 import android.content.Intent;
 import android.database.Cursor;
+import android.media.Image;
 import android.os.Bundle;
 import android.support.constraint.ConstraintLayout;
 import android.support.constraint.ConstraintSet;
@@ -24,6 +25,7 @@ import android.widget.TextView;
 
 import com.example.admin.expenses.data.ExpensesDatabase;
 import com.example.admin.expenses.data.Window;
+import com.example.admin.expenses.fragments.AddChildWindowDialogFragment;
 import com.example.admin.expenses.fragments.AddItemDialogFragment;
 import com.example.admin.expenses.fragments.AddParticipantDialogFragment;
 import com.example.admin.expenses.helpers.Helper;
@@ -62,14 +64,27 @@ public class ItemsActivity extends AppCompatActivity {
         Cursor itemCursor = db.item().selectByWindowId(windowID);
 
         while (itemCursor.moveToNext()) {
-            addItemConstraintLayout(itemCursor);
-            increaseTotalSum(itemCursor);
+            addItem(itemCursor);
+            increaseTotalSumFromItem(itemCursor);
+        }
+
+        Cursor childWindowsCursor = db.windowChildParent().selectChildren(windowID);
+
+        while (childWindowsCursor.moveToNext()) {
+            addChildWindow(childWindowsCursor);
+            increaseTotalSumFromChildWindow(childWindowsCursor);
         }
 
         itemCursor.close();
 
         setTotalsText();
         setAddItemButton();
+
+        boolean isChildWindow = db.windowChildParent().hasParent(windowID);
+
+        if (!isChildWindow) {
+            setAddChildWindowButton();
+        }
 
         if (participants.length > 0) {
             createParticipantsList();
@@ -78,34 +93,81 @@ public class ItemsActivity extends AppCompatActivity {
         setAddParticipantsButton();
     }
 
-    private void addItemConstraintLayout(Cursor itemCursor) {
+    private void setAddChildWindowButton() {
+        ImageButton addItemButton = new ImageButton(this);
+        LinearLayout imageLayout = new LinearLayout(this);
+        int minHeight = helper.getPixelsFromDps(PARTICIPANT_LIST_ELEMENT_MINIMAL_HEIGHT);
+        imageLayout.setMinimumHeight(minHeight);
+        imageLayout.setGravity(Gravity.CENTER_VERTICAL);
+
+        imageLayout.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                AddChildWindowDialogFragment dialog = new AddChildWindowDialogFragment();
+                setAddButtonListener(dialog);
+            }
+        });
+
+        addItemButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                AddChildWindowDialogFragment dialog = new AddChildWindowDialogFragment();
+                setAddButtonListener(dialog);
+            }
+        });
+
+        int dimensionPixels = helper.getPixelsFromDps(ADD_BUTTON_DIMENSION);
+
+        imageLayout.setBackgroundResource(R.drawable.list_item_border);
+        addItemButton.setBackgroundResource(R.drawable.window_icon);
+        ViewGroup.MarginLayoutParams lp = new ViewGroup.MarginLayoutParams(dimensionPixels, dimensionPixels);
+        lp.setMargins(textViewsLeftMargin,0,0,0);
+        addItemButton.setLayoutParams(lp);
+        imageLayout.addView(addItemButton);
+        layoutItems.addView(imageLayout);
+    }
+
+    private void addItem(Cursor itemCursor) {
         long itemId = itemCursor.getLong(itemCursor.getColumnIndex("id"));
 
         TextView itemTextView = getItemTextView(itemCursor);
         ImageButton deleteItemButton = getDeletionButtonForItem(itemId);
 
+        addItemLayout(itemTextView, deleteItemButton);
+    }
+
+    private void addChildWindow(Cursor cursor)
+    {
+        long id = cursor.getLong(cursor.getColumnIndex("child_id"));
+
+        TextView childWindowTextView = getChildWindowTextView(cursor);
+        ImageButton deletionButton = getDeletionButtonForChildWindow(id);
+
+        addItemLayout(childWindowTextView, deletionButton);
+    }
+
+    private void addItemLayout(TextView textView, ImageButton deletionButton)
+    {
         ConstraintLayout layout = new ConstraintLayout(this);
         layout.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        layout.addView(itemTextView);
-        layout.addView(deleteItemButton);
+        layout.addView(textView);
+        layout.addView(deletionButton);
 
         int minHeight = helper.getPixelsFromDps(PARTICIPANT_LIST_ELEMENT_MINIMAL_HEIGHT);
         float textSize = (float) helper.getPixelsFromDps(FONT_SIZE_NORMAL);
         layout.setMinHeight(minHeight);
         layout.setBackgroundResource(R.drawable.list_item_border);
-        itemTextView.setTextSize(textSize);
+        textView.setTextSize(textSize);
 
         ConstraintSet set = new ConstraintSet();
         set.clone(layout);
 
-        set.connect(itemTextView.getId(), ConstraintSet.LEFT, ConstraintSet.PARENT_ID, ConstraintSet.LEFT, textViewsLeftMargin);
-        set.connect(itemTextView.getId(), ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP);
-        set.connect(itemTextView.getId(), ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM);
+        set.connect(textView.getId(), ConstraintSet.LEFT, ConstraintSet.PARENT_ID, ConstraintSet.LEFT, textViewsLeftMargin);
+        set.connect(textView.getId(), ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP);
+        set.connect(textView.getId(), ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM);
         set.applyTo(layout);
 
-        set.connect(deleteItemButton.getId(), ConstraintSet.RIGHT, ConstraintSet.PARENT_ID, ConstraintSet.RIGHT, 20);
-        set.connect(deleteItemButton.getId(), ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP);
-        set.connect(deleteItemButton.getId(), ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM);
+        set.connect(deletionButton.getId(), ConstraintSet.RIGHT, ConstraintSet.PARENT_ID, ConstraintSet.RIGHT, 20);
+        set.connect(deletionButton.getId(), ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP);
+        set.connect(deletionButton.getId(), ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM);
         set.applyTo(layout);
 
         layoutItems.addView(layout);
@@ -170,7 +232,12 @@ public class ItemsActivity extends AppCompatActivity {
         String description = cursor.getString(cursor.getColumnIndex("description"));
         double sum = cursor.getDouble(cursor.getColumnIndex("sum"));
 
-        String itemText = String.format("%s\nSum:%s", description, Double.toString(sum));
+        String itemText = String.format(
+                "%s\n%s: %s",
+                description,
+                getResources().getString(R.string.item_sum),
+                Double.toString(sum)
+        );
 
         itemTextView.setText(itemText);
         itemTextView.setId(View.generateViewId());
@@ -178,8 +245,41 @@ public class ItemsActivity extends AppCompatActivity {
         return itemTextView;
     }
 
-    private void increaseTotalSum(Cursor cursor) {
+    private TextView getChildWindowTextView(Cursor cursor)
+    {
+        long id = cursor.getLong(cursor.getColumnIndex("child_id"));
+
+        Window childWindow = db.window().selectById(id);
+
+        double sum = db.item().selectTotalAmountByWindowId(id);
+
+        TextView textView = new TextView(this);
+
+        String itemText = String.format(
+                "%s\n%s: %s",
+                childWindow.name,
+                getResources().getString(R.string.item_sum),
+                Double.toString(sum)
+        );
+
+        textView.setText(itemText);
+        textView.setId(View.generateViewId());
+
+        return textView;
+    }
+
+    private void increaseTotalSumFromItem(Cursor cursor) {
         double sum = cursor.getDouble(cursor.getColumnIndex("sum"));
+        increaseTotalSum(sum);
+    }
+
+    private void increaseTotalSumFromChildWindow(Cursor cursor) {
+        long id = cursor.getLong(cursor.getColumnIndex("child_id"));
+        double sum = db.item().selectTotalAmountByWindowId(id);
+        increaseTotalSum(sum);
+    }
+
+    private void increaseTotalSum(double sum) {
         totalSpent += sum;
     }
 
@@ -202,6 +302,35 @@ public class ItemsActivity extends AppCompatActivity {
                 try {
                     db.beginTransaction();
                     db.debt().deleteByItemId(currentItemID);
+                    db.setTransactionSuccessful();
+                } catch (Exception e) {} finally {
+                    db.endTransaction();
+                    finish();
+                    startActivity(getIntent());
+                }
+            }
+        });
+
+        int dimensionPixels = helper.getPixelsFromDps(DELETE_BUTTON_DIMENSION);
+
+        ViewGroup.LayoutParams lp = new ViewGroup.MarginLayoutParams(dimensionPixels, dimensionPixels);
+        deleteItemButton.setLayoutParams(lp);
+
+        deleteItemButton.setId(View.generateViewId());
+        deleteItemButton.setPadding(0,30,0,0);
+        return deleteItemButton;
+    }
+
+    private ImageButton getDeletionButtonForChildWindow(long windowId)
+    {
+        final long childWindowId = windowId;
+        ImageButton deleteItemButton = new ImageButton(this);
+        deleteItemButton.setBackground(this.getResources().getDrawable(R.drawable.delete_button));
+        deleteItemButton.setOnClickListener(new View.OnClickListener(){
+            public void onClick(View v) {
+                try {
+                    db.beginTransaction();
+                    db.windowChildParent().delete(childWindowId, windowID);
                     db.setTransactionSuccessful();
                 } catch (Exception e) {} finally {
                     db.endTransaction();

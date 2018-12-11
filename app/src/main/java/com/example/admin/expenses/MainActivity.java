@@ -31,7 +31,7 @@ public class MainActivity extends AppCompatActivity {
     Helper helper;
 
     final int LIST_ELEMENT_MINIMAL_HEIGHT = 100;
-    final int FONT_SIZE_NORMAL = 8;
+    final int FONT_SIZE_NORMAL = 7;
     final int ADD_BUTTON_DIMENSION = 45;
 
     @Override
@@ -133,7 +133,12 @@ public class MainActivity extends AppCompatActivity {
         String windowText = name;
 
         if (plannedSum > 0) {
-            windowText  += String.format(Locale.getDefault(), "\nPlanned sum: %.2f", plannedSum);
+            windowText  += String.format(
+                    Locale.getDefault(),
+                    "\n%s: %.2f",
+                    getResources().getString(R.string.items_activity_planned_sum),
+                    plannedSum
+            );
         }
 
         windowTextView.setText(windowText);

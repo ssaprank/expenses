@@ -15,6 +15,7 @@
     <string name="windows_title">Управление окнами</string>
     <string name="dialog_add_item_spinner_label">Оплатил:</string>
     <string name="dialog_add_item_checkbox_area_label">Воспользовались:</string>
+    <string name="child_window_spinner_label">Выберите одно из существующих окон:</string>
 
     <string name="items_activity_total_sum">Общая сумма</string>
     <string name="items_activity_planned_sum">Запланировано потратить</string>
