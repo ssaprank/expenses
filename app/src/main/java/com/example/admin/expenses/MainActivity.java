@@ -1,6 +1,8 @@
 package com.example.admin.expenses;
 
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.ShapeDrawable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 import android.database.Cursor;
@@ -9,6 +11,8 @@ import android.support.constraint.ConstraintSet;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,20 +34,24 @@ public class MainActivity extends AppCompatActivity {
     ConstraintSet set;
     Helper helper;
 
-    final int LIST_ELEMENT_MINIMAL_HEIGHT = 100;
+    final int LIST_ELEMENT_MINIMAL_HEIGHT = 120;
     final int FONT_SIZE_NORMAL = 7;
     final int ADD_BUTTON_DIMENSION = 45;
+    final double STATIC_BAR_WIDTH_DIMINISHING_COEFFICIENT = 0.95;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
         setContentView(R.layout.activity_main);
         db = ExpensesDatabase.getInstance(this);
         layoutMain = findViewById(R.id.layout_window_list);
         set = new ConstraintSet();
         helper = new Helper(getResources().getDisplayMetrics().density);
-
-        setActionBar();
 
         Cursor windowsCursor = db.window().selectAll();
 
@@ -57,18 +65,34 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void addWindowLayout(Cursor cursor) {
-        TextView windowView = getWindowView(cursor);
+        final long windowID = cursor.getLong(cursor.getColumnIndex("id"));
+        String name = cursor.getString(cursor.getColumnIndex("name"));
+        double plannedSum = cursor.getDouble(cursor.getColumnIndex("planned_sum"));
+        double windowTotalSpent = getWindowSpent(windowID);
+
+        TextView windowView = getWindowView(name, plannedSum, windowTotalSpent);
+
+        windowView.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                openItemsActivity(windowID);
+            }
+        });
+
         ImageButton deleteWindowButton = getDeletionButtonForWindow(cursor);
+        View emptyStaticBarView = getEmptyStaticBarView();
+        View fillingStaticBarView = getFillingStaticBarView(windowTotalSpent, plannedSum);
 
         ConstraintLayout layout = new ConstraintLayout(this);
         layout.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         layout.addView(windowView);
         layout.addView(deleteWindowButton);
 
-        int minHeight = helper.getPixelsFromDps(LIST_ELEMENT_MINIMAL_HEIGHT);
+        if (plannedSum > 0) {
+            layout.addView(emptyStaticBarView);
+            layout.addView(fillingStaticBarView);
+        }
+
         float textSize = (float) helper.getPixelsFromDps(FONT_SIZE_NORMAL);
-        layout.setMinHeight(minHeight);
-        layout.setBackgroundResource(R.drawable.list_item_border);
         windowView.setTextSize(textSize);
 
         ConstraintSet set = new ConstraintSet();
@@ -76,7 +100,21 @@ public class MainActivity extends AppCompatActivity {
 
         set.connect(windowView.getId(), ConstraintSet.LEFT, ConstraintSet.PARENT_ID, ConstraintSet.LEFT, 20);
         set.connect(windowView.getId(), ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP);
-        set.connect(windowView.getId(), ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM);
+        if (plannedSum > 0) {
+            set.connect(windowView.getId(), ConstraintSet.BOTTOM, emptyStaticBarView.getId(), ConstraintSet.TOP, 25);
+            set.connect(windowView.getId(), ConstraintSet.BOTTOM, fillingStaticBarView.getId(), ConstraintSet.TOP, 25);
+        } else {
+            set.connect(windowView.getId(), ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM, 25);
+        }
+        set.applyTo(layout);
+
+        set.connect(emptyStaticBarView.getId(), ConstraintSet.TOP, windowView.getId(), ConstraintSet.BOTTOM, 25);
+        set.connect(emptyStaticBarView.getId(), ConstraintSet.RIGHT, ConstraintSet.PARENT_ID, ConstraintSet.RIGHT, 5);
+        set.connect(emptyStaticBarView.getId(), ConstraintSet.LEFT, ConstraintSet.PARENT_ID, ConstraintSet.LEFT, 5);
+        set.applyTo(layout);
+
+        set.connect(fillingStaticBarView.getId(), ConstraintSet.TOP, windowView.getId(), ConstraintSet.BOTTOM, 25);
+        set.connect(fillingStaticBarView.getId(), ConstraintSet.LEFT, emptyStaticBarView.getId(), ConstraintSet.LEFT);
         set.applyTo(layout);
 
         set.connect(deleteWindowButton.getId(), ConstraintSet.RIGHT, ConstraintSet.PARENT_ID, ConstraintSet.RIGHT, 20);
@@ -84,6 +122,9 @@ public class MainActivity extends AppCompatActivity {
         set.connect(deleteWindowButton.getId(), ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM);
         set.applyTo(layout);
 
+        int minHeight = helper.getPixelsFromDps(LIST_ELEMENT_MINIMAL_HEIGHT);
+        layout.setMinHeight(minHeight);
+        layout.setBackgroundResource(R.drawable.list_item_border);
         layoutMain.addView(layout);
     }
 
@@ -117,17 +158,7 @@ public class MainActivity extends AppCompatActivity {
         layoutMain.addView(imageLayout);
     }
 
-    private TextView getWindowView(Cursor cursor) {
-        final long windowID = cursor.getLong(cursor.getColumnIndex("id"));
-        String name = cursor.getString(cursor.getColumnIndex("name"));
-        double plannedSum = 0;
-
-        try{
-            plannedSum = cursor.getDouble(cursor.getColumnIndex("planned_sum"));
-        } catch (Exception e) {
-            plannedSum = 0;
-        }
-
+    private TextView getWindowView(String name, double plannedSum, double windowTotalSpent) {
         final TextView windowTextView = new TextView(this);
 
         String windowText = name;
@@ -139,19 +170,80 @@ public class MainActivity extends AppCompatActivity {
                     getResources().getString(R.string.items_activity_planned_sum),
                     plannedSum
             );
+
+            windowText  += String.format(
+                    Locale.getDefault(),
+                    "\n%s: %.2f",
+                    getResources().getString(R.string.items_activity_total_sum),
+                    windowTotalSpent
+            );
         }
 
         windowTextView.setText(windowText);
-
-        windowTextView.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                openItemsActivity(windowID);
-            }
-        });
-
         windowTextView.setId(View.generateViewId());
 
         return windowTextView;
+    }
+
+    private double getWindowSpent(long windowID)
+    {
+        double sum = db.item().selectTotalAmountByWindowId(windowID);
+        sum += db.windowChildParent().selectChildrenTotalSum(windowID);
+
+        return sum;
+    }
+
+    private View getEmptyStaticBarView()
+    {
+        View view = new View(this);
+        view.setBackgroundResource(R.drawable.window_spent_static_bar);
+
+        ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 30);
+
+        view.setLayoutParams(params);
+        view.setId(View.generateViewId());
+
+        return view;
+    }
+
+    private View getFillingStaticBarView(double spent, double plannedSpent)
+    {
+        if (plannedSpent == 0) {
+            View view =  new View(this);
+            view.setId(View.generateViewId());
+            return view;
+        }
+
+        int percentage = (int) (spent / plannedSpent * 100);
+
+        if (percentage > 100) {
+            percentage = 100;
+        }
+
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        int width = displayMetrics.widthPixels;
+        View view = new View(this);
+        view.setId(View.generateViewId());
+
+        if (percentage <= 0) {
+            return view;
+        }
+
+        int barWidth = (int)(width / 100 * percentage * STATIC_BAR_WIDTH_DIMINISHING_COEFFICIENT);
+
+        if (percentage == 100) {
+            view.setBackgroundResource(R.drawable.window_spent_static_bar_red);
+        } else if (percentage < 50) {
+            view.setBackgroundResource(R.drawable.window_spent_static_bar_green);
+        } else {
+            view.setBackgroundResource(R.drawable.window_spent_static_bar_yellow);
+        }
+
+        ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(barWidth, 30);
+        view.setLayoutParams(params);
+
+        return view;
     }
 
     private ImageButton getDeletionButtonForWindow(Cursor cursor) {

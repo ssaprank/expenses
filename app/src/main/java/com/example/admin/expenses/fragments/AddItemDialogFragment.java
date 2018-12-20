@@ -29,6 +29,7 @@ import com.example.admin.expenses.data.Item;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 
 public class AddItemDialogFragment extends AddingDialogFragment {
 
@@ -139,7 +140,7 @@ public class AddItemDialogFragment extends AddingDialogFragment {
         item.windowID = getArguments().getLong("window_id");
         item.description = descriptionView.getText().toString();
         item.sum = Double.parseDouble(sumView.getText().toString());
-        item.created_timestamp = System.currentTimeMillis() / 1000;
+        item.created_timestamp = new Date().getTime();
 
         return item;
     }

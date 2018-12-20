@@ -32,6 +32,9 @@ import com.example.admin.expenses.helpers.Helper;
 
 import org.w3c.dom.Text;
 
+import java.sql.Date;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Locale;
 
@@ -231,12 +234,16 @@ public class ItemsActivity extends AppCompatActivity {
         TextView itemTextView = new TextView(this);
         String description = cursor.getString(cursor.getColumnIndex("description"));
         double sum = cursor.getDouble(cursor.getColumnIndex("sum"));
+        Date date = new Date(cursor.getLong(cursor.getColumnIndex("timestamp")));
+
+        String formattedDate = new SimpleDateFormat("E d.M / H:m").format(date);
 
         String itemText = String.format(
-                "%s\n%s: %s",
+                "%s\n%s: %s\n%s",
                 description,
                 getResources().getString(R.string.item_sum),
-                Double.toString(sum)
+                Double.toString(sum),
+                formattedDate
         );
 
         itemTextView.setText(itemText);

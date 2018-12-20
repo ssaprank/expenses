@@ -5,6 +5,15 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:textSize="20sp"
+        android:gravity="center_horizontal"
+        android:textColor="#000000"
+        android:text="@string/add_item_label"/>
+
     <EditText
         android:id="@+id/item_description"
         android:layout_width="match_parent"
