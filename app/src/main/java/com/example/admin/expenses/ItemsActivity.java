@@ -236,13 +236,13 @@ public class ItemsActivity extends AppCompatActivity {
         double sum = cursor.getDouble(cursor.getColumnIndex("sum"));
         Date date = new Date(cursor.getLong(cursor.getColumnIndex("timestamp")));
 
-        String formattedDate = new SimpleDateFormat("E d.M / H:m").format(date);
+        String formattedDate = new SimpleDateFormat("dd.mm.yyyy hh:mm").format(date);
 
         String itemText = String.format(
                 "%s\n%s: %s\n%s",
                 description,
                 getResources().getString(R.string.item_sum),
-                Double.toString(sum),
+                String.format("%.2f", sum),
                 formattedDate
         );
 
