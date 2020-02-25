@@ -500,7 +500,6 @@ public class ItemsActivity extends AppCompatActivity {
         int previousParticipantViewId = 0;
 
         for (int i = 0; i < participants.length; i++) {
-
             TextView participantView = getParticipantListElementView(participants[i]);
 
             placeParticipantViewOnList(participantView, previousParticipantViewId);
@@ -512,7 +511,7 @@ public class ItemsActivity extends AppCompatActivity {
     private TextView getParticipantListElementView(String currentParticipant) {
         TextView participantView = new TextView(this);
 
-        String text = getDebtsToOtherParticipants(currentParticipant);
+        String text = getParticipantText(currentParticipant);
 
         participantView.setText(text);
         layoutParticipants.addView(participantView);
@@ -526,6 +525,19 @@ public class ItemsActivity extends AppCompatActivity {
         participantView.setGravity(Gravity.CENTER_VERTICAL);
 
         return participantView;
+    }
+
+    private String getParticipantText(String currentParticipant)
+    {
+        double totalSpentInWindow = db.debt().selectTotalSpentByParticipant(currentParticipant, windowID);
+        String debtToOthers = getDebtsToOtherParticipants(currentParticipant);
+
+        return String.format(
+                "%s\n%s: %.2f",
+                debtToOthers,
+                getResources().getString(R.string.items_activity_participant_debt_text_total),
+                totalSpentInWindow
+        );
     }
 
     private String getDebtsToOtherParticipants(String currentParticipant)

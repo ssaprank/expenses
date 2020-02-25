@@ -30,6 +30,8 @@
     <string name="items_activity_tab_expenses_title">Расходы</string>
     <string name="items_activity_tab_participants_title">Участники</string>
 
+    <string name="items_activity_participant_debt_text_total">Потратил</string>
+
     <string name="items_activity_participant_debt_text1">Должен</string>
     <string name="items_activity_participant_debt_text2">участнику</string>
 </resources>

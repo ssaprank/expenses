@@ -14,6 +14,9 @@ public abstract class DebtDao implements BaseDao<Debt> {
     @Query("SELECT SUM(amount) FROM " + Debt.TABLE_NAME + " WHERE owner = :owner AND debtor = :debtor AND window_id = :windowId")
     public abstract double selectPersonalDebt(String owner, String debtor, long windowId);
 
+    @Query("SELECT SUM(amount) FROM " + Debt.TABLE_NAME + " WHERE owner = :owner AND window_id = :windowId")
+    public abstract double selectTotalSpentByParticipant(String owner, long windowId);
+
     @Query("DELETE FROM " + Debt.TABLE_NAME + " WHERE item_id = :itemID")
     public abstract int deleteByItemId(long itemID);
 
