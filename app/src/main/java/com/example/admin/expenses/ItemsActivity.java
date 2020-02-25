@@ -231,6 +231,7 @@ public class ItemsActivity extends AppCompatActivity {
 
     private TextView getItemTextView(Cursor cursor)
     {
+        long itemId = cursor.getLong(cursor.getColumnIndex("id"));
         TextView itemTextView = new TextView(this);
         String description = cursor.getString(cursor.getColumnIndex("description"));
         double sum = cursor.getDouble(cursor.getColumnIndex("sum"));
@@ -246,10 +247,47 @@ public class ItemsActivity extends AppCompatActivity {
                 formattedDate
         );
 
+        if (participants.length > 0) {
+            itemText = itemText.concat(getParticipantsItemText(itemId));
+        }
+
         itemTextView.setText(itemText);
         itemTextView.setId(View.generateViewId());
 
         return itemTextView;
+    }
+
+    private String getParticipantsItemText(long itemId)
+    {
+        Cursor debtCursor = db.debt().selectByItemId(itemId);
+
+        if (debtCursor.getCount() == 0) {
+            return "";
+        }
+
+        debtCursor.moveToNext();
+
+        String debtOwner = debtCursor.getString(debtCursor.getColumnIndex("owner"));
+
+        int debtorColumnIndex = debtCursor.getColumnIndex("debtor");
+
+        String debtors = "";
+
+        while (debtCursor.moveToNext()) {
+            debtors = debtors.concat(debtCursor.getString(debtorColumnIndex) + ",");
+        }
+
+        if (debtors.equals("")) {
+            return "";
+        }
+
+        return String.format(
+                "\n%s %s\n%s %s",
+                getResources().getString(R.string.dialog_add_item_spinner_label),
+                debtOwner,
+                getResources().getString(R.string.dialog_add_item_checkbox_area_label),
+                debtors.substring(0, debtors.length() - 1)
+        );
     }
 
     private TextView getChildWindowTextView(Cursor cursor)
