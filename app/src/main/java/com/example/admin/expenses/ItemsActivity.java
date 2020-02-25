@@ -271,7 +271,7 @@ public class ItemsActivity extends AppCompatActivity {
 
         int debtorColumnIndex = debtCursor.getColumnIndex("debtor");
 
-        String debtors = "";
+        String debtors = debtCursor.getString(debtorColumnIndex) + ",";
 
         while (debtCursor.moveToNext()) {
             debtors = debtors.concat(debtCursor.getString(debtorColumnIndex) + ",");
